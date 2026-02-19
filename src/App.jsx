@@ -12,7 +12,7 @@ import {
   Sparkles, Link as LinkIcon, Trash2, Plus, Users, Eye, Copy, LayoutDashboard, LogOut,
   Globe, Star, Gift, Sun, Moon, Rocket, LayoutList, Gem, Home, MessageCircle, Send,
   Cake, HeartHandshake, Zap, Award, Lightbulb, Smile, Camera, Infinity, Flame, Bird, 
-  Anchor, Coffee, Crown, Key, MapPin, Shield, CheckCircle, RefreshCw, ChevronRight, Edit3, Type, UploadCloud, MonitorPlay, Video as VideoIcon, AlertCircle, Loader2, FileAudio, Wifi, WifiOff, Info, Clock, Palette, Quote, Disc, Film
+  Anchor, Coffee, Crown, Key, MapPin, Shield, CheckCircle, RefreshCw, ChevronRight, Edit3, Type, UploadCloud, MonitorPlay, Video as VideoIcon, AlertCircle, Loader2, FileAudio, Wifi, WifiOff, Info, Clock, Palette, Quote, Disc, Film, MailOpen, XCircle
 } from 'lucide-react';
 
 // --- Firebase Configuration ---
@@ -48,20 +48,167 @@ const ICON_LIBRARY = {
   Crown, Key, MapPin, Gem, Sun, Moon, Rocket, Zap, Lock, Shield
 };
 
-// --- Animation Library ---
+// --- 🌟 مكتبة الأنيميشن الموسعة للمناسبات ---
 const ANIMATION_TYPES = [
-  { id: 'classic', name: 'كلاسيكي (فقاعات)', icon: '🫧' },
-  { id: 'love', name: 'قلوب طايرة', icon: '❤️' },
+  { id: 'classic', name: 'كلاسيكي', icon: '🫧' },
+  { id: 'love', name: 'قلوب', icon: '❤️' },
+  { id: 'romantic', name: 'رومانسي/جواز', icon: '💍' },
   { id: 'stars', name: 'سماء ونجوم', icon: '✨' },
-  { id: 'fireflies', name: 'يراعات مضيئة', icon: '🧚' },
-  { id: 'snow', name: 'تساقط ثلج', icon: '❄️' },
+  { id: 'fireflies', name: 'يراعات', icon: '🧚' },
+  { id: 'snow', name: 'ثلج', icon: '❄️' },
   { id: 'confetti', name: 'احتفال', icon: '🎉' },
+  { id: 'birthday', name: 'عيد ميلاد', icon: '🎂' },
+  { id: 'ramadan', name: 'رمضان', icon: '🌙' },
+  { id: 'eid', name: 'العيد', icon: '🎈' },
+  { id: 'friends', name: 'أصحاب', icon: '🥂' },
   { id: 'matrix', name: 'ماتريكس', icon: '💻' }
 ];
 
 // --- Components ---
 
-// ✅ مكون الفيديو الذكي (يعمل عند الظهور)
+// ✅ الخلفية المتحركة (تم تحديثها لتشمل كل المناسبات والأشكال المختلطة للموقع)
+const DynamicBackground = ({ isDarkMode, type = 'classic', customColors }) => {
+    const particles = useMemo(() => {
+        const count = ['stars', 'snow', 'confetti'].includes(type) ? 100 : ['ramadan', 'eid', 'birthday', 'romantic', 'friends', 'portfolio-mixed'].includes(type) ? 30 : 40; 
+        return [...Array(count)].map((_, i) => ({
+            id: i,
+            left: `${Math.random() * 100}%`,
+            top: type === 'snow' ? `-${Math.random() * 20}%` : `${Math.random() * 100}%`,
+            size: Math.random() * (type === 'stars' ? 3 : 15) + 5 + 'px', 
+            duration: Math.random() * 10 + 5 + 's',
+            delay: `-${Math.random() * 10}s`,
+            rotation: `${Math.random() * 360}deg`
+        }));
+    }, [type]);
+
+    const bgStyle = customColors?.start && customColors?.end 
+        ? { background: `linear-gradient(180deg, ${customColors.start} 0%, ${customColors.end} 100%)` } 
+        : {};
+    const baseGradient = customColors?.start ? '' : (isDarkMode ? 'bg-[#050511]' : 'bg-[#fff0f5]');
+
+    return (
+        <div className={`fixed inset-0 pointer-events-none z-0 overflow-hidden h-full w-full ${baseGradient}`} style={bgStyle}>
+            {/* Soft Glows for some themes */}
+            {(!['matrix', 'stars'].includes(type)) && (
+                <>
+                    <div className={`absolute top-[-10%] left-[-10%] w-[600px] h-[600px] rounded-full blur-[120px] opacity-20 animate-float ${isDarkMode ? 'bg-indigo-600' : 'bg-rose-400'}`}></div>
+                    <div className={`absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full blur-[120px] opacity-20 animate-float ${isDarkMode ? 'bg-purple-600' : 'bg-purple-400'}`} style={{animationDelay: '2s'}}></div>
+                </>
+            )}
+
+            {particles.map((p, index) => {
+                const glowStyle = { 
+                    left: p.left, top: p.top, width: p.size, height: p.size, 
+                    animationDuration: p.duration, animationDelay: p.delay,
+                };
+
+                // --- 🎨 أشكال الأنيميشن ---
+                if (type === 'classic') return <div key={p.id} className={`absolute rounded-full animate-rise ${isDarkMode ? 'bg-white/10' : 'bg-indigo-400/20'}`} style={{ ...glowStyle, top: 'auto', bottom: '-20px', boxShadow: `0 0 10px 2px rgba(255, 255, 255, 0.2)` }}></div>;
+                
+                if (type === 'love') return <div key={p.id} className={`absolute animate-rise text-red-500/50 drop-shadow-md`} style={{ ...glowStyle, top: 'auto', bottom: '-20px', fontSize: parseInt(p.size)*1.5 + 'px' }}>{index % 3 === 0 ? '💖' : '❤️'}</div>;
+                
+                if (type === 'romantic') return <div key={p.id} className={`absolute animate-slow-drift text-rose-400/60 drop-shadow-lg`} style={{ ...glowStyle, top: 'auto', bottom: '-50px', fontSize: parseInt(p.size)*2 + 'px', filter: 'blur(0.5px)' }}>{['🌹', '✨', '💍', '🤍'][index % 4]}</div>;
+                
+                if (type === 'stars') return <div key={p.id} className={`absolute rounded-full animate-twinkle bg-white shadow-[0_0_5px_white]`} style={{...glowStyle, boxShadow: '0 0 8px 2px white'}}></div>;
+                
+                if (type === 'snow') return <div key={p.id} className={`absolute rounded-full animate-fall bg-white/70`} style={{...glowStyle, boxShadow: '0 0 5px white'}}></div>;
+                
+                if (type === 'fireflies') return <div key={p.id} className={`absolute rounded-full bg-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.8)] animate-float`} style={{ left: p.left, top: p.top, width: '6px', height: '6px', animationDuration: p.duration, animationDelay: p.delay }}></div>;
+                
+                if (type === 'ramadan') return <div key={p.id} className={`absolute animate-rise opacity-70`} style={{ ...glowStyle, top: 'auto', bottom: '-50px', fontSize: parseInt(p.size)*2 + 'px' }}>{['🌙', '⭐', '✨', '🏮'][index % 4]}</div>;
+                
+                if (type === 'eid') return <div key={p.id} className={`absolute animate-rise opacity-80`} style={{ ...glowStyle, top: 'auto', bottom: '-50px', fontSize: parseInt(p.size)*2 + 'px' }}>{['🎈', '🎊', '🎇', '✨'][index % 4]}</div>;
+                
+                if (type === 'birthday') return <div key={p.id} className={`absolute animate-rise opacity-80`} style={{ ...glowStyle, top: 'auto', bottom: '-50px', fontSize: parseInt(p.size)*2 + 'px' }}>{['🎈', '🎁', '🎂', '🎉'][index % 4]}</div>;
+                
+                if (type === 'friends') return <div key={p.id} className={`absolute animate-bounce-float opacity-70`} style={{ ...glowStyle, top: 'auto', bottom: '-50px', fontSize: parseInt(p.size)*2 + 'px' }}>{['✌️', '🥂', '💛', '✨'][index % 4]}</div>;
+
+                if (type === 'matrix') return <div key={p.id} className={`absolute animate-fall text-green-500 font-mono text-xs opacity-50`} style={{ ...glowStyle }}>{String.fromCharCode(0x30A0 + Math.random() * 96)}</div>;
+
+                // 🎨 شكل مخصص للموقع الرئيسي (تشكيلة أشكال)
+                if (type === 'portfolio-mixed') return <div key={p.id} className={`absolute animate-slow-drift opacity-60 hover:opacity-100 transition-opacity`} style={{ ...glowStyle, top: 'auto', bottom: '-50px', fontSize: parseInt(p.size)*1.5 + 'px' }}>{['✨', '💖', '🎁', '🎉', '🎈', '🔮'][index % 6]}</div>;
+
+                return null;
+            })}
+            <style>{`
+                @keyframes float { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 50% { transform: translate(30px, -30px) rotate(10deg); } }
+                @keyframes rise { 0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(-100vh) scale(1.5) rotate(45deg); opacity: 0; } }
+                @keyframes slow-drift { 0% { transform: translateY(0) rotate(0deg); opacity: 0; } 50% { opacity: 0.6; transform: translateY(-50vh) translateX(50px) rotate(180deg); } 100% { transform: translateY(-100vh) translateX(-50px) rotate(360deg); opacity: 0; } }
+                @keyframes bounce-float { 0%, 100% { transform: translateY(0) scale(1); opacity:0;} 50% { transform: translateY(-80vh) scale(1.2); opacity:1;} }
+                @keyframes fall { 0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; } 10% { opacity: 1; } 100% { transform: translateY(110vh) rotate(360deg); opacity: 0; } }
+                @keyframes twinkle { 0%, 100% { opacity: 0.1; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }
+                @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                
+                .animate-float { animation: float 10s ease-in-out infinite; }
+                .animate-rise { animation: rise linear infinite; }
+                .animate-slow-drift { animation: slow-drift linear infinite; }
+                .animate-bounce-float { animation: bounce-float cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+                .animate-fall { animation: fall linear infinite; }
+                .animate-twinkle { animation: twinkle linear infinite; }
+                .animate-spin-slow { animation: spin-slow 8s linear infinite; }
+                
+                @keyframes soft-pulse { 0%, 100% { opacity: 1; transform: scale(1); filter: brightness(1); } 50% { opacity: 0.8; transform: scale(0.98); filter: brightness(1.2); } }
+                .animate-soft-pulse { animation: soft-pulse 3s ease-in-out infinite; }
+                
+                /* POPUP ANIMATION (Spring Physics) */
+                @keyframes modal-spring {
+                    0% { opacity: 0; transform: scale(0.5) translateY(50px); }
+                    60% { opacity: 1; transform: scale(1.05) translateY(-10px); }
+                    100% { opacity: 1; transform: scale(1) translateY(0); }
+                }
+                .animate-modal-spring { animation: modal-spring 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+                
+                /* ✅ Inner Glowing Edge Animation */
+                @keyframes edge-glow {
+                    0%, 100% { box-shadow: inset 0 0 20px var(--accent-color-30), inset 0 0 10px var(--accent-color-10), 0 0 10px rgba(0,0,0,0.5); border-color: var(--accent-color-50); }
+                    50% { box-shadow: inset 0 0 40px var(--accent-color-50), inset 0 0 20px var(--accent-color-30), 0 0 15px rgba(0,0,0,0.7); border-color: var(--accent-color); }
+                }
+                .animate-edge-glow { animation: edge-glow 3s infinite alternate; }
+            `}</style>
+        </div>
+    );
+};
+
+
+// ✅ شاشة التحميل المخصصة (ترث أنيميشن وألوان الذكرى + نص مخصص)
+const LoadingScreen = ({ text = "جاري التحميل", animationType = "classic", themeColors, isDarkMode = true }) => {
+    return (
+        <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden ${isDarkMode ? 'bg-[#050511] text-white' : 'bg-[#fafafa] text-gray-900'}`}>
+            
+            {/* 🌟 تشغيل أنيميشن الذكرى كخلفية للتحميل */}
+            <DynamicBackground isDarkMode={isDarkMode} type={animationType} customColors={themeColors} />
+            
+            <div className="relative z-10 flex flex-col items-center p-8 rounded-3xl backdrop-blur-md bg-black/10 border border-white/5 shadow-2xl">
+                <div className="relative mb-6 flex items-center justify-center">
+                    {/* Elegant Double Spinner */}
+                    <div className="w-20 h-20 border-4 border-gray-500/30 border-t-indigo-500 border-r-pink-500 rounded-full animate-spin-smooth"></div>
+                    <div className="absolute inset-0 flex items-center justify-center animate-pulse-slow">
+                        <Heart size={28} className="text-pink-500 fill-pink-500 drop-shadow-[0_0_10px_rgba(236,72,153,0.8)]" />
+                    </div>
+                </div>
+                
+                <h2 className="text-xl md:text-2xl font-bold font-alexandria mb-3 tracking-wider text-center drop-shadow-md">
+                    {text}
+                </h2>
+                
+                {/* Chic Minimalist Dots */}
+                <div className="flex gap-2 mt-2">
+                    <div className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style={{animationDelay: '0s'}}></div>
+                    <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                    <div className="w-2 h-2 rounded-full bg-pink-400 animate-bounce" style={{animationDelay: '0.4s'}}></div>
+                </div>
+            </div>
+            
+            <style>{`
+                @keyframes spin-smooth { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                .animate-spin-smooth { animation: spin-smooth 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite; }
+                .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+            `}</style>
+        </div>
+    );
+};
+
+// ✅ مكون الفيديو الذكي
 const AutoPlayVideo = ({ src, className }) => {
     const videoRef = useRef(null);
     useEffect(() => {
@@ -71,7 +218,7 @@ const AutoPlayVideo = ({ src, className }) => {
             } else {
                 videoRef.current.pause();
             }
-        }, { threshold: 0.5 }); // يعمل لما 50% من الفيديو يظهر
+        }, { threshold: 0.5 });
         
         if (videoRef.current) observer.observe(videoRef.current);
         return () => observer.disconnect();
@@ -83,14 +230,14 @@ const AutoPlayVideo = ({ src, className }) => {
             src={src} 
             className={className} 
             loop 
-            muted // صامت افتراضياً للسماح بالتشغيل التلقائي
+            muted 
             playsInline 
-            controls // السماح للمستخدم بفتح الصوت
+            controls 
         />
     );
 };
 
-// ✅ مكون جديد لعمل انيميشن عند السكرول
+// ✅ مكون الانيميشن عند السكرول
 const ScrollReveal = ({ children, delay = 0 }) => {
     const [isVisible, setIsVisible] = useState(false);
     const ref = useRef(null);
@@ -100,10 +247,10 @@ const ScrollReveal = ({ children, delay = 0 }) => {
         ([entry]) => {
           if (entry.isIntersecting) {
             setIsVisible(true);
-            observer.unobserve(ref.current); // تشغيل مرة واحدة فقط
+            observer.unobserve(ref.current);
           }
         },
-        { threshold: 0.15 } // يبدأ الانيميشن لما 15% من العنصر يظهر
+        { threshold: 0.1 }
       );
       if (ref.current) {
         observer.observe(ref.current);
@@ -118,71 +265,13 @@ const ScrollReveal = ({ children, delay = 0 }) => {
     return (
       <div
         ref={ref}
-        className={`transition-all duration-1000 ease-out transform ${
-          isVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-20 scale-95"
+        className={`transition-all duration-[600ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] transform ${
+          isVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-16 scale-95"
         }`}
         style={{ transitionDelay: `${delay}ms` }}
       >
         {children}
       </div>
-    );
-};
-
-// ✅ تحديث الانيميشن: كثافة أعلى وتوهج
-const DynamicBackground = ({ isDarkMode, type = 'classic', customColors }) => {
-    const particles = useMemo(() => {
-        const count = type === 'stars' || type === 'snow' ? 100 : 40; 
-        return [...Array(count)].map((_, i) => ({
-            id: i,
-            left: `${Math.random() * 100}%`,
-            top: type === 'snow' ? `-${Math.random() * 20}%` : `${Math.random() * 100}%`,
-            size: Math.random() * (type === 'stars' ? 3 : 15) + 5 + 'px', 
-            duration: Math.random() * 10 + 5 + 's',
-            delay: `-${Math.random() * 10}s`
-        }));
-    }, [type]);
-
-    const bgStyle = customColors?.start && customColors?.end 
-        ? { background: `linear-gradient(180deg, ${customColors.start} 0%, ${customColors.end} 100%)` } 
-        : {};
-
-    const baseGradient = customColors?.start ? '' : (isDarkMode ? 'bg-[#050511]' : 'bg-[#fff0f5]');
-
-    return (
-        <div className={`fixed inset-0 pointer-events-none z-0 overflow-hidden h-full w-full ${baseGradient}`} style={bgStyle}>
-            {(type === 'classic' || type === 'love' || type === 'fireflies') && (
-                <>
-                    <div className={`absolute top-[-10%] left-[-10%] w-[600px] h-[600px] rounded-full blur-[120px] opacity-30 animate-float ${isDarkMode ? 'bg-indigo-600' : 'bg-rose-400'}`}></div>
-                    <div className={`absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full blur-[120px] opacity-30 animate-float ${isDarkMode ? 'bg-purple-600' : 'bg-purple-400'}`} style={{animationDelay: '2s'}}></div>
-                </>
-            )}
-            {particles.map((p) => {
-                const glowStyle = { 
-                    left: p.left, top: p.top, width: p.size, height: p.size, 
-                    animationDuration: p.duration, animationDelay: p.delay,
-                    boxShadow: `0 0 10px 2px rgba(255, 255, 255, 0.3)` 
-                };
-
-                if (type === 'classic') return <div key={p.id} className={`absolute rounded-full animate-rise ${isDarkMode ? 'bg-white/10' : 'bg-indigo-400/20'}`} style={{ ...glowStyle, top: 'auto', bottom: '-20px' }}></div>;
-                if (type === 'love') return <div key={p.id} className={`absolute animate-rise text-red-500/40 drop-shadow-md`} style={{ ...glowStyle, top: 'auto', bottom: '-20px', fontSize: parseInt(p.size)*2 + 'px', boxShadow: 'none' }}>❤️</div>;
-                if (type === 'stars') return <div key={p.id} className={`absolute rounded-full animate-twinkle bg-white shadow-[0_0_5px_white]`} style={{...glowStyle, boxShadow: '0 0 8px 2px white'}}></div>;
-                if (type === 'snow') return <div key={p.id} className={`absolute rounded-full animate-fall bg-white/70`} style={{...glowStyle, boxShadow: '0 0 5px white'}}></div>;
-                if (type === 'fireflies') return <div key={p.id} className={`absolute rounded-full bg-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.8)] animate-float`} style={{ left: p.left, top: p.top, width: '6px', height: '6px', animationDuration: p.duration, animationDelay: p.delay }}></div>;
-                return null;
-            })}
-            <style>{`
-                @keyframes float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(30px, -30px); } }
-                @keyframes rise { 0% { transform: translateY(0) scale(1); opacity: 0; } 50% { opacity: 0.8; } 100% { transform: translateY(-100vh) scale(1.5); opacity: 0; } }
-                @keyframes fall { 0% { transform: translateY(0) rotate(0deg); opacity: 0; } 10% { opacity: 1; } 100% { transform: translateY(100vh) rotate(360deg); opacity: 0; } }
-                @keyframes twinkle { 0%, 100% { opacity: 0.2; transform: scale(1); } 50% { opacity: 1; transform: scale(1.5); } }
-                @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-                .animate-float { animation: float 10s ease-in-out infinite; }
-                .animate-rise { animation: rise linear infinite; }
-                .animate-fall { animation: fall linear infinite; }
-                .animate-twinkle { animation: twinkle linear infinite; }
-                .animate-spin-slow { animation: spin-slow 8s linear infinite; }
-            `}</style>
-        </div>
     );
 };
 
@@ -229,6 +318,11 @@ const PortfolioLanding = ({ onLoginClick, isDarkMode, toggleTheme }) => {
   const [activeTab, setActiveTab] = useState('home'); 
   const [showcase, setShowcase] = useState([]);
   const [secretClickCount, setSecretClickCount] = useState(0);
+  
+  // ✅ التحكم في خلفية الموقع الرئيسي
+  const [bgType, setBgType] = useState('portfolio-mixed');
+  const bgOptions = ['portfolio-mixed', 'stars', 'love', 'fireflies', 'snow', 'matrix', 'classic'];
+  const cycleBg = () => setBgType(bgOptions[(bgOptions.indexOf(bgType) + 1) % bgOptions.length]);
 
   useEffect(() => {
     let unsubscribe;
@@ -248,7 +342,7 @@ const PortfolioLanding = ({ onLoginClick, isDarkMode, toggleTheme }) => {
             }
         });
     }
-     
+      
     return () => unsubscribe && unsubscribe();
   }, []);
 
@@ -276,12 +370,21 @@ const PortfolioLanding = ({ onLoginClick, isDarkMode, toggleTheme }) => {
         .glass-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); }
         .light .glass-card { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.05); }
       `}</style>
-
-      <DynamicBackground isDarkMode={isDarkMode} type="classic" />
-       
+      
+      {/* ✅ خلفية الموقع الرئيسي المتغيرة */}
+      <DynamicBackground isDarkMode={isDarkMode} type={bgType} />
+        
       <div className={`flex justify-between items-center p-6 z-10 sticky top-0 ${isDarkMode ? 'bg-[#050511]/80' : 'bg-[#fff0f5]/80'} backdrop-blur-md`}>
         <div className="flex items-center gap-2 font-bold text-lg font-alexandria tracking-wide"><Sparkles size={20} className={isDarkMode ? "text-indigo-500" : "text-rose-500"} /> SecretPage</div>
-        <button onClick={toggleTheme} className={`p-2 rounded-full transition-colors ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-black/5'}`}>{isDarkMode ? <Sun size={20} className="text-yellow-400"/> : <Moon size={20} className="text-slate-600"/>}</button>
+        <div className="flex items-center gap-2">
+            {/* ✅ زر لتغيير أشكال خلفية الموقع الرئيسي */}
+            <button onClick={cycleBg} className={`p-2 rounded-full transition-colors ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-black/5'}`} title="تغيير شكل الخلفية">
+                <Sparkles size={20} className="text-pink-400" />
+            </button>
+            <button onClick={toggleTheme} className={`p-2 rounded-full transition-colors ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-black/5'}`}>
+                {isDarkMode ? <Sun size={20} className="text-yellow-400"/> : <Moon size={20} className="text-slate-600"/>}
+            </button>
+        </div>
       </div>
 
       <main className="flex-1 z-10 overflow-y-auto no-scrollbar pb-32">
@@ -300,51 +403,77 @@ const PortfolioLanding = ({ onLoginClick, isDarkMode, toggleTheme }) => {
             </div>
          )}
 
-         {/* ... (rest of PortfolioLanding code remains same) ... */}
          {activeTab === 'work' && (
             <div className="animate-slide-up pt-6 px-4 max-w-lg mx-auto">
-                <h2 className="text-2xl font-bold mb-6 font-alexandria">أحدث الأعمال 🎨</h2>
+                <h2 className="text-2xl font-bold mb-6 font-alexandria text-center">أحدث الأعمال 🎨</h2>
                 <div className="grid grid-cols-1 gap-4">
-                    {showcase.map(item => (
-                        <div key={item.id} onClick={() => window.open(`?id=${item.id}`, '_blank')} className={`glass-card rounded-3xl overflow-hidden cursor-pointer h-48 relative group transition-all duration-300 hover:scale-[1.02]`}>
-                            {item.coverImage ? (
-                                item.coverType === 'video' ? 
-                                <video src={item.coverImage} className="w-full h-full object-cover opacity-60" muted loop autoPlay playsInline /> :
-                                <img src={item.coverImage} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition duration-500" />
-                            ) : <div className="w-full h-full bg-gradient-to-br from-indigo-900 to-purple-900 opacity-50"></div>}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                            <div className="absolute bottom-5 right-5 text-right"><h3 className="font-bold text-white text-lg drop-shadow-md mb-1">{item.recipientName}</h3><p className="text-xs text-gray-300">تصميم: {item.senderName}</p></div>
-                        </div>
+                    {showcase.map((item, index) => (
+                        <ScrollReveal key={item.id} delay={index * 100}>
+                            <div onClick={() => window.open(`?id=${item.id}`, '_blank')} className={`glass-card rounded-3xl overflow-hidden cursor-pointer h-48 relative group transition-all duration-300 hover:scale-[1.02]`}>
+                                {item.coverImage ? (
+                                    item.coverType === 'video' ? 
+                                    <video src={item.coverImage} className="w-full h-full object-cover opacity-60" muted loop autoPlay playsInline /> :
+                                    <img src={item.coverImage} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition duration-500" />
+                                ) : <div className="w-full h-full bg-gradient-to-br from-indigo-900 to-purple-900 opacity-50"></div>}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                                <div className="absolute bottom-5 right-5 text-right"><h3 className="font-bold text-white text-lg drop-shadow-md mb-1">{item.recipientName}</h3><p className="text-xs text-gray-300">تصميم: {item.senderName}</p></div>
+                            </div>
+                        </ScrollReveal>
                     ))}
                     {showcase.length === 0 && <div className="text-center opacity-40 py-20 bg-white/5 rounded-3xl border border-dashed border-white/10">لا توجد أعمال معروضة حالياً</div>}
                 </div>
             </div>
          )}
-
+         
          {activeTab === 'features' && (
-            <div className="animate-slide-up pt-6 px-4 space-y-12 max-w-lg mx-auto">
-                <div className="text-center">
-                    <div className="w-16 h-16 mx-auto bg-gradient-to-b from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center text-white mb-6 shadow-lg shadow-indigo-500/30"><Shield size={32} /></div>
+            <div className="animate-slide-up pt-6 px-4 max-w-lg mx-auto pb-10">
+                <div className="text-center mb-10">
                     <h2 className="text-3xl font-bold mb-3 font-alexandria">ليه Secret Page؟</h2>
-                    <p className="text-sm opacity-60 mb-10 leading-relaxed max-w-xs mx-auto">لأننا بنقدملك هدية مش مجرد شكل، دي تجربة كاملة بتعيش العمر.</p>
-                    <div className="space-y-4">
-                        {[{t:"صفحة ويب كاملة خاصة بيك وبحبيبك بس", i:Globe, c: "bg-indigo-500/20 text-indigo-300"}, {t:"أمان وخصوصية 100% بباسورد خاص", i:Lock, c: "bg-purple-500/20 text-purple-300"}, {t:"موسيقى بتشتغل تلقائياً مع الذكريات", i:Music, c: "bg-blue-500/20 text-blue-300"}, {t:"تصميم متجاوب وشيك على كل الموبايلات", i:Rocket, c: "bg-pink-500/20 text-pink-300"}].map((x,i)=>(
-                           <div key={i} className={`flex items-center gap-4 p-4 rounded-2xl border transition-all hover:scale-[1.02] ${isDarkMode ? 'bg-[#151525] border-white/5' : 'bg-white border-gray-100 shadow-sm'}`}>
-                               <div className={`p-3 rounded-full shrink-0 ${x.c}`}><x.i size={20} strokeWidth={2.5}/></div>
-                               <span className={`text-sm font-bold text-right ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>{x.t}</span>
-                           </div>
-                        ))}
-                    </div>
+                    <p className="text-sm opacity-60 max-w-xs mx-auto leading-relaxed">لأننا بنقدملك هدية مش مجرد شكل، دي تجربة كاملة بتعيش العمر.</p>
                 </div>
+
+                {/* Main Features - Dark Cards */}
+                <div className="space-y-3 mb-12">
+                    {[
+                        {t:"صفحة ويب كاملة خاصة بيك وبحبيبك بس", i:Globe, c: "text-indigo-400 bg-indigo-500/10"}, 
+                        {t:"أمان وخصوصية 100% بباسورد خاص", i:Lock, c: "text-purple-400 bg-purple-500/10"}, 
+                        {t:"موسيقى بتشتغل تلقائياً مع الذكريات", i:Music, c: "text-blue-400 bg-blue-500/10"}, 
+                        {t:"تصميم متجاوب وشيك على كل الموبايلات", i:Rocket, c: "text-pink-400 bg-pink-500/10"}
+                    ].map((x,i)=>(
+                        <ScrollReveal key={i} delay={i * 100}>
+                            <div className={`flex items-center justify-between p-4 rounded-[1.2rem] border transition-all duration-300 hover:scale-[1.02] cursor-default shadow-md ${isDarkMode ? 'bg-[#1a1a2e] border-white/5' : 'bg-white border-gray-100'}`}>
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${x.c}`}>
+                                    <x.i size={18} strokeWidth={2.5}/>
+                                </div>
+                                <span className={`text-sm font-bold text-right flex-1 pr-4 ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>{x.t}</span>
+                            </div>
+                        </ScrollReveal>
+                    ))}
+                </div>
+
+                {/* Additional Features - ✨ */}
                 <div>
-                    <h3 className="text-2xl font-bold mb-6 font-alexandria flex items-center gap-2">✨ مميزات إضافية</h3>
-                    <div className="space-y-5">
-                         {[{title: "سرعة وتسليم فوري", desc: "استلم رابط صفحتك في نفس اليوم.", icon: Zap, bg: "bg-yellow-500/20", color: "text-yellow-400"}, {title: "جودة عالية", desc: "الصور بتظهر بأعلى جودة وتصميم راقي.", icon: ImageIcon, bg: "bg-blue-500/20", color: "text-blue-400"}, {title: "ضمان بقاء الصفحة", desc: "الرابط شغال ومتاح 24/7 مدى الحياة.", icon: Award, bg: "bg-green-500/20", color: "text-green-400"}].map((feat, i) => (
-                             <div key={i} className="flex items-center gap-5">
-                                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${feat.bg} ${feat.color}`}><feat.icon size={26} strokeWidth={2} /></div>
-                                 <div className="text-right"><h4 className="text-lg font-bold mb-1">{feat.title}</h4><p className="text-xs opacity-50">{feat.desc}</p></div>
-                             </div>
-                          ))}
+                    <h3 className="text-2xl font-bold mb-8 font-alexandria flex items-center justify-center gap-2">
+                        مميزات إضافية <Sparkles className="text-yellow-500" size={24}/>
+                    </h3>
+                    <div className="space-y-6">
+                        {[
+                            {title: "سرعة وتسليم فوري", desc: "استلم رابط صفحتك في نفس اليوم.", icon: Zap, bg: "bg-[#2d2511]", color: "text-yellow-500"}, 
+                            {title: "جودة عالية", desc: "الصور بتظهر بأعلى جودة وتصميم راقي.", icon: ImageIcon, bg: "bg-[#111e36]", color: "text-blue-500"}, 
+                            {title: "ضمان بقاء الصفحة", desc: "الرابط شغال ومتاح 24/7 مدى الحياة.", icon: Award, bg: "bg-[#112d1b]", color: "text-green-500"}
+                        ].map((feat, i) => (
+                            <ScrollReveal key={i} delay={i * 150}>
+                                <div className="flex items-center justify-end gap-5 text-right">
+                                    <div>
+                                        <h4 className={`text-lg font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{feat.title}</h4>
+                                        <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{feat.desc}</p>
+                                    </div>
+                                    <div className={`w-14 h-14 rounded-[1.2rem] flex items-center justify-center shrink-0 ${feat.bg} ${feat.color}`}>
+                                        <feat.icon size={26} strokeWidth={2} />
+                                    </div>
+                                </div>
+                            </ScrollReveal>
+                        ))}
                     </div>
                 </div>
             </div>
@@ -371,9 +500,16 @@ const PortfolioLanding = ({ onLoginClick, isDarkMode, toggleTheme }) => {
                 <div className="w-24 h-24 bg-green-500/10 rounded-full flex items-center justify-center text-green-500 mb-6 animate-pulse"><MessageCircle size={40} /></div>
                 <h2 className="text-3xl font-bold mb-4 font-alexandria">جاهز تفرحهم؟</h2>
                 <p className="mb-10 opacity-60 max-w-xs leading-relaxed">الطلب بيتم عن طريق الواتساب مباشرة. اضغط تحت وهنرد عليك بالتفاصيل.</p>
-                <button className="w-full max-w-sm py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-bold flex items-center justify-center gap-3 shadow-xl shadow-green-900/20 transition-transform active:scale-95"><Send size={20} /> تواصل واتساب</button>
+                {/* ✅ تحويل للواتساب بالرقم المحدد */}
+                <button 
+                    onClick={() => window.open('https://wa.me/201202789980?text=مرحباً، مهتم بطلب تصميم صفحة SecretPage', '_blank')} 
+                    className="w-full max-w-sm py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-bold flex items-center justify-center gap-3 shadow-xl shadow-green-900/20 transition-transform active:scale-95"
+                >
+                    <Send size={20} /> تواصل واتساب
+                </button>
             </div>
          )}
+         
          <div className="text-center pt-8"><p onClick={handleSecretClick} className="text-[10px] opacity-20 cursor-default hover:opacity-50 transition">© SecretPage 2026</p></div>
       </main>
 
@@ -391,9 +527,9 @@ const PortfolioLanding = ({ onLoginClick, isDarkMode, toggleTheme }) => {
 };
 
 // --- 1. ADMIN DASHBOARD ---
-
 const AdminDashboard = ({ onLogOut, onCreateNew, onEdit, isDarkMode }) => {
     const [memories, setMemories] = useState([]);
+
     useEffect(() => {
         let unsubscribe;
         const fetchMemories = async () => {
@@ -403,7 +539,6 @@ const AdminDashboard = ({ onLogOut, onCreateNew, onEdit, isDarkMode }) => {
             setMemories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         };
 
-        // ✅ Wait for Auth
         if (auth) {
             unsubscribe = onAuthStateChanged(auth, (user) => {
                 if (user) fetchMemories();
@@ -436,7 +571,6 @@ const AdminDashboard = ({ onLogOut, onCreateNew, onEdit, isDarkMode }) => {
                                 <div className="flex items-center gap-3">
                                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-bold ${isDarkMode ? 'bg-white/5 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>{mem.recipientName?.[0]}</div>
                                     <div className="overflow-hidden">
-                                        {/* ✅ عرض عنوان الذكرى بدلاً من الاسم فقط */}
                                         <h3 className="text-lg font-bold truncate max-w-[150px]">{mem.memoryTitle || mem.recipientName}</h3>
                                         {mem.memoryTitle && <p className="text-[10px] opacity-60 truncate">{mem.recipientName}</p>}
                                         <p className="text-[10px] opacity-50 font-mono mt-1">Pass: {mem.password}</p>
@@ -464,19 +598,21 @@ const AdminDashboard = ({ onLogOut, onCreateNew, onEdit, isDarkMode }) => {
     );
 };
 
-// --- 2. MEMORY EDITOR (With Cloudinary Support & Editing) ---
-
+// --- 2. MEMORY EDITOR ---
 const MemoryEditor = ({ onCancel, onSave, isDarkMode, initialData }) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({ 
       recipientName: '', senderName: '', memoryTitle: '', eventTitle: '', password: '', 
       targetDate: '', timerLabel: '', mainMessage: '',
+      loadingText: 'جاري التحميل ✨', // ✅ إضافة نص التحميل الافتراضي
       sectionTitles: { countdown: '', gallery: '', cards: '', marquees: '' }, 
-      themeColors: { start: '', end: '' }, 
-      songUrl: '', songTitle: '', songImage: '', songType: 'link', // ✅ Added song details
-      coverImage: '', coverType: 'image', // ✅ Added coverType
+      themeColors: { start: '', end: '', accent: '#f472b6' },
+      songUrl: '', songTitle: '', songImage: '', songType: 'link', 
+      coverImage: '', coverType: 'image', 
       backgroundAnimation: 'classic',
-      showInPortfolio: false, secretMessage: '', photos: [], marquees: [], flipCards: [],
+      showInPortfolio: false, 
+      secretMessage: '', secretButtonLabel: '', secretModalTitle: '',
+      photos: [], marquees: [], flipCards: [],
       loginTitle: '', loginPlaceholder: '', loginButtonText: '',
       loginDescription: '', loginIcon: 'Lock', loginImage: '' 
   });
@@ -484,7 +620,7 @@ const MemoryEditor = ({ onCancel, onSave, isDarkMode, initialData }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadState, setUploadState] = useState({ type: null, progress: 0 }); 
   const [musicSource, setMusicSource] = useState('link');
-  const [tempPhoto, setTempPhoto] = useState({ img: '', title: '', desc: '', type: 'image' }); // ✅ Added type to tempPhoto
+  const [tempPhoto, setTempPhoto] = useState({ img: '', title: '', desc: '', type: 'image' });
   const [tempMarquee, setTempMarquee] = useState({ text: '', icon: 'Heart' });
   const [tempFlip, setTempFlip] = useState({ message: '', icon: 'Star', hint: '' }); 
   const [authState, setAuthState] = useState({ connected: false, user: null });
@@ -495,7 +631,10 @@ const MemoryEditor = ({ onCancel, onSave, isDarkMode, initialData }) => {
             ...formData, 
             ...initialData, 
             sectionTitles: initialData.sectionTitles || { countdown: '', gallery: '', cards: '', marquees: '' },
-            themeColors: initialData.themeColors || { start: '', end: '' }
+            themeColors: { ...formData.themeColors, ...initialData.themeColors },
+            secretButtonLabel: initialData.secretButtonLabel || '',
+            secretModalTitle: initialData.secretModalTitle || '',
+            loadingText: initialData.loadingText || 'جاري التحميل ✨' // ✅ جلب النص المحفوظ
         });
         if (initialData.songType) setMusicSource(initialData.songType);
     }
@@ -506,15 +645,12 @@ const MemoryEditor = ({ onCancel, onSave, isDarkMode, initialData }) => {
     }
   }, [initialData]);
 
-  // ✅ Cloudinary Upload Function (Replaces Firebase Storage)
   const uploadToCloudinary = async (file, field, onProgress) => {
       if (!file) return;
-      
       if (file.size > 100 * 1024 * 1024) { 
           alert("الملف كبير جداً. الحد الأقصى 100 ميجا.");
           return;
       }
-
       setUploading(true);
       setUploadState({ type: field, progress: 0 });
 
@@ -526,7 +662,6 @@ const MemoryEditor = ({ onCancel, onSave, isDarkMode, initialData }) => {
 
       try {
           const xhr = new XMLHttpRequest();
-          
           const promise = new Promise((resolve, reject) => {
               xhr.upload.addEventListener("progress", (event) => {
                   if (event.lengthComputable) {
@@ -535,38 +670,20 @@ const MemoryEditor = ({ onCancel, onSave, isDarkMode, initialData }) => {
                       if(onProgress) onProgress(progress);
                   }
               });
-
               xhr.addEventListener("load", () => {
                   if (xhr.status >= 200 && xhr.status < 300) {
                       const response = JSON.parse(xhr.responseText);
                       resolve(response.secure_url);
                   } else {
-                      let errorMessage = `فشل الرفع (كود ${xhr.status})`;
-                      try {
-                          const res = JSON.parse(xhr.responseText);
-                          if (res.error && res.error.message) {
-                              errorMessage = `خطأ من Cloudinary: ${res.error.message}`;
-                              if (res.error.message.includes("preset")) {
-                                  errorMessage += "\n\n(تأكد إن الـ Upload Preset مكتوب صح وإنه معمول Unsigned)";
-                              }
-                          }
-                      } catch (e) {
-                          errorMessage += `: ${xhr.statusText}`;
-                      }
-                      reject(new Error(errorMessage));
+                      reject(new Error("Upload Failed"));
                   }
               });
-
-              xhr.addEventListener("error", () => reject(new Error("خطأ في الاتصال بالإنترنت (Network Error)")));
-              xhr.addEventListener("abort", () => reject(new Error("تم إلغاء الرفع")));
+              xhr.addEventListener("error", () => reject(new Error("Network Error")));
           });
-
           xhr.open("POST", url);
           xhr.send(fd);
-
           const secureUrl = await promise;
           return secureUrl;
-
       } catch (error) {
           console.error("Cloudinary Error:", error);
           alert(error.message);
@@ -580,13 +697,11 @@ const MemoryEditor = ({ onCancel, onSave, isDarkMode, initialData }) => {
   const handleImageUpload = async (e, field) => {
     const file = e.target.files[0];
     if (file) {
-        // ✅ تحديد نوع الملف (فيديو أو صورة)
         const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
-        
         const url = await uploadToCloudinary(file, field);
         if (url) {
             if(field === 'cover') setFormData({ ...formData, coverImage: url, coverType: mediaType });
-            if(field === 'photo') setTempPhoto({ ...tempPhoto, img: url, type: mediaType }); // ✅ حفظ نوع الميديا في المعرض
+            if(field === 'photo') setTempPhoto({ ...tempPhoto, img: url, type: mediaType }); 
             if(field === 'loginImage') setFormData({...formData, loginImage: url}); 
             if(field === 'songImage') setFormData({...formData, songImage: url}); 
         }
@@ -620,11 +735,9 @@ const MemoryEditor = ({ onCancel, onSave, isDarkMode, initialData }) => {
     setSaving(true);
     try {
         if (initialData && initialData.id) {
-            // Update existing memory
             await updateDoc(doc(db, "memories", initialData.id), { ...formData, updatedAt: serverTimestamp() });
             alert("تم التعديل بنجاح!");
         } else {
-            // Create new memory
             await addDoc(collection(db, "memories"), { ...formData, createdAt: serverTimestamp() });
             alert("تم الحفظ بنجاح!");
         }
@@ -653,6 +766,7 @@ const MemoryEditor = ({ onCancel, onSave, isDarkMode, initialData }) => {
     <div className={`min-h-screen p-4 flex items-center justify-center ${isDarkMode ? 'bg-[#050511] text-white' : 'bg-[#fff0f5] text-gray-900'}`}>
       <div className={`w-full max-w-5xl rounded-[2.5rem] relative h-[90vh] flex flex-col overflow-hidden border shadow-2xl ${isDarkMode ? 'bg-[#12121f] border-white/10' : 'bg-white border-gray-100'}`}>
         
+        {/* Editor Header */}
         <div className="flex justify-between items-center p-8 border-b border-white/5">
             <div><h2 className="text-2xl font-bold font-alexandria mb-1">{initialData ? 'تعديل الذكرى' : 'تصميم ذكرى جديدة'}</h2><p className="text-xs opacity-50">خطوة {step} من 4</p></div>
             <div className="flex gap-2 items-center">
@@ -660,7 +774,6 @@ const MemoryEditor = ({ onCancel, onSave, isDarkMode, initialData }) => {
                     {authState.user ? <Wifi size={10}/> : <WifiOff size={10}/>}
                     {authState.user ? 'متصل' : 'غير متصل'}
                 </div>
-
                 {[1,2,3,4].map(s => <div key={s} onClick={()=>setStep(s)} className={`w-3 h-3 rounded-full cursor-pointer transition-all ${step===s ? 'bg-indigo-500 scale-125' : 'bg-white/20'}`}></div>)}
                 <button onClick={onCancel} className="mr-4 p-2 hover:bg-red-500/10 hover:text-red-500 rounded-full transition"><X size={20}/></button>
             </div>
@@ -668,52 +781,44 @@ const MemoryEditor = ({ onCancel, onSave, isDarkMode, initialData }) => {
 
         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
           
+          {/* Step 1 */}
           {step === 1 && (
             <div className="animate-fade-in space-y-6 max-w-2xl mx-auto">
-                <div className="space-y-2 mb-4">
-                    <label className="text-xs font-bold opacity-70 flex items-center gap-2"><LayoutDashboard size={14}/> عنوان الملف (يظهر لك فقط في لوحة التحكم)</label>
+               <div className="space-y-2 mb-4">
+                    <label className="text-xs font-bold opacity-70 flex items-center gap-2"><LayoutDashboard size={14}/> عنوان الملف (يظهر لك فقط)</label>
                     <input value={formData.memoryTitle} onChange={e=>setFormData({...formData, memoryTitle: e.target.value})} className="input-field bg-indigo-500/10 border-indigo-500/30 border p-4 rounded-xl w-full focus:border-indigo-500 transition" placeholder="مثال: عيد ميلاد سارة 2026" />
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2"><label className="text-xs font-bold opacity-70">اسم العميل (يظهر في الموقع)</label><input value={formData.recipientName} onChange={e=>setFormData({...formData, recipientName: e.target.value})} className="input-field bg-white/5 border-white/10 p-4 rounded-xl w-full focus:border-indigo-500 transition" placeholder="مثال: سارة" /></div>
+                    <div className="space-y-2"><label className="text-xs font-bold opacity-70">اسم العميل</label><input value={formData.recipientName} onChange={e=>setFormData({...formData, recipientName: e.target.value})} className="input-field bg-white/5 border-white/10 p-4 rounded-xl w-full focus:border-indigo-500 transition" placeholder="مثال: سارة" /></div>
                     <div className="space-y-2"><label className="text-xs font-bold opacity-70">اسم الراسل</label><input value={formData.senderName} onChange={e=>setFormData({...formData, senderName: e.target.value})} className="input-field bg-white/5 border-white/10 p-4 rounded-xl w-full focus:border-indigo-500 transition" placeholder="مثال: أحمد" /></div>
                 </div>
-                <div className="space-y-2"><label className="text-xs font-bold opacity-70">عنوان المناسبة (اختياري)</label><input value={formData.eventTitle} onChange={e=>setFormData({...formData, eventTitle: e.target.value})} className="input-field bg-white/5 border-white/10 p-4 rounded-xl w-full" placeholder="مثال: عيد ميلاد سعيد" /></div>
-                
+                <div className="space-y-2"><label className="text-xs font-bold opacity-70">عنوان المناسبة</label><input value={formData.eventTitle} onChange={e=>setFormData({...formData, eventTitle: e.target.value})} className="input-field bg-white/5 border-white/10 p-4 rounded-xl w-full" placeholder="مثال: عيد ميلاد سعيد" /></div>
                 <div className="p-6 rounded-2xl bg-indigo-500/5 border border-indigo-500/20">
                     <label className="text-xs font-bold text-indigo-400 mb-2 block flex items-center gap-2"><Key size={14}/> الرقم السري للعميل</label>
                     <div className="flex gap-2"><input value={formData.password} onChange={e=>setFormData({...formData, password: e.target.value})} className="input-field bg-black/20 border-white/10 p-4 rounded-xl w-full text-center text-xl font-mono tracking-widest font-bold" placeholder="****" /><button onClick={generatePassword} className="px-6 bg-indigo-600 rounded-xl text-white font-bold hover:bg-indigo-700 transition flex items-center gap-2"><RefreshCw size={18}/> توليد</button></div>
                 </div>
-
-                {/* ✅ تخصيص صفحة الدخول بالكامل */}
-                <div className="p-6 rounded-2xl bg-white/5 border border-white/10 mt-6">
-                    <label className="text-xs font-bold mb-4 block flex items-center gap-2 text-pink-400"><Type size={14}/> تخصيص صفحة الدخول (كاملة)</label>
+                 <div className="p-6 rounded-2xl bg-white/5 border border-white/10 mt-6">
+                    <label className="text-xs font-bold mb-4 block flex items-center gap-2 text-pink-400"><Type size={14}/> تخصيص صفحة الدخول والتحميل</label>
                     <div className="space-y-4">
+                        {/* ✅ حقل تخصيص نص التحميل */}
+                        <div>
+                            <label className="text-[10px] opacity-50 mb-1 block">نص شاشة التحميل (أول حاجة بتظهر)</label>
+                            <input value={formData.loadingText} onChange={e=>setFormData({...formData, loadingText: e.target.value})} className="input-field bg-black/20 border-white/10 p-3 rounded-xl w-full text-sm font-bold text-pink-300" placeholder="مثال: جاري تجهيز الذكريات..." />
+                        </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div><label className="text-[10px] opacity-50 mb-1 block">عنوان الصفحة (Headline)</label><input value={formData.loginTitle} onChange={e=>setFormData({...formData, loginTitle: e.target.value})} className="input-field bg-black/20 border-white/10 p-3 rounded-xl w-full text-sm" placeholder="الافتراضي: رسالة خاصة..." /></div>
-                            <div><label className="text-[10px] opacity-50 mb-1 block">الوصف (Sub-header)</label><input value={formData.loginDescription} onChange={e=>setFormData({...formData, loginDescription: e.target.value})} className="input-field bg-black/20 border-white/10 p-3 rounded-xl w-full text-sm" placeholder="الافتراضي: المحتوى ده سري..." /></div>
+                            <div><label className="text-[10px] opacity-50 mb-1 block">عنوان الصفحة</label><input value={formData.loginTitle} onChange={e=>setFormData({...formData, loginTitle: e.target.value})} className="input-field bg-black/20 border-white/10 p-3 rounded-xl w-full text-sm" placeholder="الافتراضي: رسالة خاصة..." /></div>
+                            <div><label className="text-[10px] opacity-50 mb-1 block">الوصف</label><input value={formData.loginDescription} onChange={e=>setFormData({...formData, loginDescription: e.target.value})} className="input-field bg-black/20 border-white/10 p-3 rounded-xl w-full text-sm" placeholder="الافتراضي: المحتوى ده سري..." /></div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div><label className="text-[10px] opacity-50 mb-1 block">نص الزر</label><input value={formData.loginButtonText} onChange={e=>setFormData({...formData, loginButtonText: e.target.value})} className="input-field bg-black/20 border-white/10 p-3 rounded-xl w-full text-sm" placeholder="الافتراضي: فتح الرسالة" /></div>
-                            <div><label className="text-[10px] opacity-50 mb-1 block">النص التوضيحي (Placeholder)</label><input value={formData.loginPlaceholder} onChange={e=>setFormData({...formData, loginPlaceholder: e.target.value})} className="input-field bg-black/20 border-white/10 p-3 rounded-xl w-full text-sm" placeholder="الافتراضي: ****" /></div>
+                            <div><label className="text-[10px] opacity-50 mb-1 block">النص التوضيحي</label><input value={formData.loginPlaceholder} onChange={e=>setFormData({...formData, loginPlaceholder: e.target.value})} className="input-field bg-black/20 border-white/10 p-3 rounded-xl w-full text-sm" placeholder="الافتراضي: ****" /></div>
                         </div>
-                        
                         <div className="pt-4 border-t border-white/5">
                             <label className="text-[10px] opacity-50 mb-2 block">أيقونة القفل (أو اختر صورة):</label>
                             <div className="flex gap-4 items-start">
-                                <div className="flex-1">
-                                    <IconGrid selected={formData.loginIcon || 'Lock'} onSelect={icon => setFormData({...formData, loginIcon: icon})} />
-                                </div>
+                                <div className="flex-1"><IconGrid selected={formData.loginIcon || 'Lock'} onSelect={icon => setFormData({...formData, loginIcon: icon})} /></div>
                                 <div className="w-1/3">
-                                    <CustomFileUpload 
-                                        label="صورة فوق الأيقونة"
-                                        uploading={uploading && uploadState.type === 'loginImage'}
-                                        progress={uploadState.progress}
-                                        accept="image/*"
-                                        onChange={e => handleImageUpload(e, 'loginImage')}
-                                        icon={ImageIcon}
-                                    />
+                                    <CustomFileUpload label="صورة فوق الأيقونة" uploading={uploading && uploadState.type === 'loginImage'} progress={uploadState.progress} accept="image/*" onChange={e => handleImageUpload(e, 'loginImage')} icon={ImageIcon}/>
                                     {formData.loginImage && <img src={formData.loginImage} className="mt-2 h-16 w-16 object-cover rounded-full mx-auto border border-white/20" />}
                                 </div>
                             </div>
@@ -723,194 +828,100 @@ const MemoryEditor = ({ onCancel, onSave, isDarkMode, initialData }) => {
                 <div className="space-y-2"><label className="text-xs font-bold opacity-70">رسالة الإهداء</label><textarea value={formData.mainMessage} onChange={e=>setFormData({...formData, mainMessage: e.target.value})} className="input-field bg-white/5 border-white/10 p-4 rounded-xl w-full h-32 resize-none" placeholder="اكتب رسالة حلوة..." /></div>
             </div>
           )}
-
           {step === 2 && (
-            <div className="animate-fade-in space-y-8 max-w-3xl mx-auto">
-                <div className="space-y-4">
+             <div className="animate-fade-in space-y-8 max-w-3xl mx-auto">
+                 <div className="space-y-4">
                     <h3 className="font-bold flex items-center gap-2 mb-2"><ImageIcon size={18} /> الغلاف (صورة أو فيديو)</h3>
-                    <CustomFileUpload 
-                        label={formData.coverImage ? "تغيير الغلاف" : "رفع الغلاف"}
-                        uploading={uploading && uploadState.type === 'cover'}
-                        progress={uploadState.progress}
-                        accept="image/*,video/*"
-                        onChange={e => handleImageUpload(e, 'cover')}
-                        icon={formData.coverType === 'video' ? VideoIcon : ImageIcon}
-                    />
+                    <CustomFileUpload label={formData.coverImage ? "تغيير الغلاف" : "رفع الغلاف"} uploading={uploading && uploadState.type === 'cover'} progress={uploadState.progress} accept="image/*,video/*" onChange={e => handleImageUpload(e, 'cover')} icon={formData.coverType === 'video' ? VideoIcon : ImageIcon}/>
                     {formData.coverImage && (
                         <div className="relative mt-4 group w-fit mx-auto h-40 rounded-xl overflow-hidden shadow-lg border border-white/10">
-                            {formData.coverType === 'video' ? (
-                                <video src={formData.coverImage} className="h-full w-full object-cover" muted autoPlay loop />
-                            ) : (
-                                <img src={formData.coverImage} className="h-full w-full object-cover" alt="Cover"/>
-                            )}
+                            {formData.coverType === 'video' ? <video src={formData.coverImage} className="h-full w-full object-cover" muted autoPlay loop /> : <img src={formData.coverImage} className="h-full w-full object-cover" alt="Cover"/>}
                             <div className="absolute top-2 right-2 bg-green-500 text-white p-1 rounded-full"><CheckCircle size={14}/></div>
                         </div>
                     )}
                 </div>
-                
                 <div className="space-y-4 pt-6 border-t border-white/5">
                     <label className="font-bold flex items-center gap-2"><Music size={18} /> الموسيقى</label>
-                    
-                    {/* ✅ بيانات الأغنية الجديدة */}
                     <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label className="text-[10px] opacity-50 block mb-1">اسم الأغنية (يظهر في المشغل)</label>
-                            <input value={formData.songTitle} onChange={e=>setFormData({...formData, songTitle: e.target.value})} className="input-field bg-black/20 border-white/10 p-3 rounded-xl w-full text-sm" placeholder="مثال: بحبك - عمرو دياب" />
-                        </div>
-                        <div>
-                            <label className="text-[10px] opacity-50 block mb-1">صورة الألبوم (اختياري)</label>
-                            <CustomFileUpload 
-                                label="صورة الأغنية"
-                                uploading={uploading && uploadState.type === 'songImage'}
-                                accept="image/*"
-                                onChange={e => handleImageUpload(e, 'songImage')}
-                                icon={Disc}
-                            />
-                            {formData.songImage && <p className="text-[10px] text-green-400 mt-1">تم رفع صورة الألبوم ✅</p>}
-                        </div>
+                        <div><label className="text-[10px] opacity-50 block mb-1">اسم الأغنية</label><input value={formData.songTitle} onChange={e=>setFormData({...formData, songTitle: e.target.value})} className="input-field bg-black/20 border-white/10 p-3 rounded-xl w-full text-sm" placeholder="مثال: بحبك - عمرو دياب" /></div>
+                        <div><label className="text-[10px] opacity-50 block mb-1">صورة الألبوم</label><CustomFileUpload label="صورة الأغنية" uploading={uploading && uploadState.type === 'songImage'} accept="image/*" onChange={e => handleImageUpload(e, 'songImage')} icon={Disc}/>{formData.songImage && <p className="text-[10px] text-green-400 mt-1">تم رفع صورة الألبوم ✅</p>}</div>
                     </div>
-
                     <div className="flex gap-2 mb-2">
                         <button onClick={()=>{setMusicSource('link'); setFormData({...formData, songType:'link', songUrl:''})}} className={`flex-1 py-3 rounded-xl text-xs font-bold border transition ${musicSource==='link' ? 'bg-white text-black border-white' : 'border-white/10 bg-white/5 text-gray-400 hover:bg-white/10'}`}>رابط يوتيوب</button>
                         <button onClick={()=>{setMusicSource('file'); setFormData({...formData, songType:'file', songUrl:''})}} className={`flex-1 py-3 rounded-xl text-xs font-bold border transition ${musicSource==='file' ? 'bg-white text-black border-white' : 'border-white/10 bg-white/5 text-gray-400 hover:bg-white/10'}`}>رفع ملف (MP3)</button>
                     </div>
-                    
                     {musicSource === 'link' ? (
                         <div className="flex items-center bg-white/5 border border-white/10 rounded-xl px-4 transition focus-within:border-indigo-500"><LinkIcon size={18} className="opacity-50"/><input value={formData.songUrl} onChange={e=>setFormData({...formData, songUrl: e.target.value})} className="bg-transparent border-none p-4 w-full outline-none" placeholder="https://youtube.com/..." /></div>
                     ) : (
-                        <div>
-                            <CustomFileUpload 
-                                label={formData.songUrl ? "تغيير الملف الصوتي" : "رفع ملف MP3"}
-                                uploading={uploading && uploadState.type === 'audio'}
-                                progress={uploadState.progress}
-                                accept="audio/*"
-                                onChange={handleAudioUpload}
-                                icon={FileAudio}
-                            />
-                             {formData.songUrl && <p className="text-green-400 text-xs mt-3 flex items-center justify-center gap-1"><CheckCircle size={12}/> تم رفع الملف الصوتي بنجاح</p>}
-                        </div>
+                        <div><CustomFileUpload label={formData.songUrl ? "تغيير الملف الصوتي" : "رفع ملف MP3"} uploading={uploading && uploadState.type === 'audio'} progress={uploadState.progress} accept="audio/*" onChange={handleAudioUpload} icon={FileAudio}/>{formData.songUrl && <p className="text-green-400 text-xs mt-3 flex items-center justify-center gap-1"><CheckCircle size={12}/> تم رفع الملف الصوتي بنجاح</p>}</div>
                     )}
                 </div>
-
                 <div className="bg-white/5 p-6 rounded-3xl border border-white/10 relative mt-6">
                     <h3 className="font-bold mb-4 flex items-center gap-2"><Camera size={18}/> معرض الذكريات</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 items-start">
-                         <div className="h-full">
-                            <CustomFileUpload 
-                                label="إضافة (صورة/فيديو)"
-                                uploading={uploading && uploadState.type === 'photo'}
-                                progress={uploadState.progress}
-                                accept="image/*,video/*"
-                                onChange={e => handleImageUpload(e, 'photo')}
-                                icon={Plus}
-                            />
-                         </div>
+                         <div className="h-full"><CustomFileUpload label="إضافة (صورة/فيديو)" uploading={uploading && uploadState.type === 'photo'} progress={uploadState.progress} accept="image/*,video/*" onChange={e => handleImageUpload(e, 'photo')} icon={Plus}/></div>
                          <div className="space-y-3">
                             <input value={tempPhoto.title} onChange={e=>setTempPhoto({...tempPhoto, title: e.target.value})} className="w-full bg-black/20 border border-white/10 p-3 rounded-xl text-sm focus:border-indigo-500 outline-none transition" placeholder="عنوان (اختياري)"/>
                             <textarea value={tempPhoto.desc} onChange={e=>setTempPhoto({...tempPhoto, desc: e.target.value})} className="w-full bg-black/20 border border-white/10 p-3 rounded-xl text-sm h-24 resize-none focus:border-indigo-500 outline-none transition" placeholder="وصف قصير..."/>
                             <button onClick={()=>addItem('photos', tempPhoto.img?tempPhoto:null, ()=>setTempPhoto({img:'',title:'',desc:'', type:'image'}))} disabled={!tempPhoto.img} className="w-full py-3 bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-700 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2"><Plus size={16}/> حفظ</button>
                          </div>
                     </div>
-                    
-                    {tempPhoto.img && (
-                        <div className="mb-4 p-2 bg-indigo-500/20 border border-indigo-500/30 rounded-xl flex items-center gap-3">
-                            {tempPhoto.type === 'video' ? <Film size={20} className="text-white"/> : <img src={tempPhoto.img} className="w-10 h-10 rounded-lg object-cover" />}
-                            <span className="text-xs text-indigo-300">تم الرفع! اضغط "حفظ" للإضافة.</span>
-                        </div>
-                    )}
-
+                    {tempPhoto.img && (<div className="mb-4 p-2 bg-indigo-500/20 border border-indigo-500/30 rounded-xl flex items-center gap-3">{tempPhoto.type === 'video' ? <Film size={20} className="text-white"/> : <img src={tempPhoto.img} className="w-10 h-10 rounded-lg object-cover" />}<span className="text-xs text-indigo-300">تم الرفع! اضغط "حفظ" للإضافة.</span></div>)}
                     <div className="grid grid-cols-4 gap-3 mt-6">
-                        {formData.photos.map(p=><div key={p.id} className="relative group aspect-square rounded-xl overflow-hidden border border-white/5">
-                            {p.type === 'video' ? (
-                                <video src={p.img} className="w-full h-full object-cover" muted />
-                            ) : (
-                                <img src={p.img} className="w-full h-full object-cover"/>
-                            )}
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                                <button onClick={()=>removeItem('photos', p.id)} className="bg-red-500 p-2 rounded-full text-white hover:scale-110 transition"><Trash2 size={16}/></button>
-                            </div>
-                            {p.type === 'video' && <div className="absolute bottom-1 right-1 bg-black/50 p-1 rounded-full"><Film size={10} className="text-white"/></div>}
-                        </div>)}
+                        {formData.photos.map(p=><div key={p.id} className="relative group aspect-square rounded-xl overflow-hidden border border-white/5">{p.type === 'video' ? <video src={p.img} className="w-full h-full object-cover" muted /> : <img src={p.img} className="w-full h-full object-cover"/>}<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center"><button onClick={()=>removeItem('photos', p.id)} className="bg-red-500 p-2 rounded-full text-white hover:scale-110 transition"><Trash2 size={16}/></button></div>{p.type === 'video' && <div className="absolute bottom-1 right-1 bg-black/50 p-1 rounded-full"><Film size={10} className="text-white"/></div>}</div>)}
                     </div>
                 </div>
-            </div>
+             </div>
           )}
 
           {step === 3 && (
              <div className="animate-fade-in grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="col-span-full p-6 bg-white/5 border border-white/10 rounded-3xl">
-                    <h3 className="font-bold mb-4 flex gap-2 text-blue-400"><MonitorPlay size={18}/> التصميم والانيميشن</h3>
+                    <h3 className="font-bold mb-4 flex gap-2 text-blue-400"><MonitorPlay size={18}/> التصميم والألوان</h3>
                     
-                    {/* ✅ تخصيص ألوان الخلفية */}
                     <div className="mb-6 p-4 rounded-2xl bg-black/20 border border-white/5">
-                        <label className="text-xs font-bold mb-3 block flex items-center gap-2 text-indigo-300"><Palette size={14}/> ألوان الخلفية (تدرج لوني)</label>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <span className="text-[10px] opacity-50 block mb-1">لون البداية</span>
-                                <input type="color" value={formData.themeColors?.start || '#050511'} onChange={e=>setFormData({...formData, themeColors: {...formData.themeColors, start: e.target.value}})} className="w-full h-10 rounded-lg cursor-pointer bg-transparent border border-white/20 p-1" />
-                            </div>
-                            <div>
-                                <span className="text-[10px] opacity-50 block mb-1">لون النهاية</span>
-                                <input type="color" value={formData.themeColors?.end || '#1a1a2e'} onChange={e=>setFormData({...formData, themeColors: {...formData.themeColors, end: e.target.value}})} className="w-full h-10 rounded-lg cursor-pointer bg-transparent border border-white/20 p-1" />
-                            </div>
+                        <label className="text-xs font-bold mb-3 block flex items-center gap-2 text-indigo-300"><Palette size={14}/> ألوان الثيم</label>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div><span className="text-[10px] opacity-50 block mb-1">لون البداية (BG)</span><input type="color" value={formData.themeColors?.start || '#050511'} onChange={e=>setFormData({...formData, themeColors: {...formData.themeColors, start: e.target.value}})} className="w-full h-10 rounded-lg cursor-pointer bg-transparent border border-white/20 p-1" /></div>
+                            <div><span className="text-[10px] opacity-50 block mb-1">لون النهاية (BG)</span><input type="color" value={formData.themeColors?.end || '#1a1a2e'} onChange={e=>setFormData({...formData, themeColors: {...formData.themeColors, end: e.target.value}})} className="w-full h-10 rounded-lg cursor-pointer bg-transparent border border-white/20 p-1" /></div>
+                            <div><span className="text-[10px] opacity-50 block mb-1 font-bold text-yellow-300">لون الأيقونات (Accent)</span><input type="color" value={formData.themeColors?.accent || '#f472b6'} onChange={e=>setFormData({...formData, themeColors: {...formData.themeColors, accent: e.target.value}})} className="w-full h-10 rounded-lg cursor-pointer bg-transparent border border-white/20 p-1" /></div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                         {ANIMATION_TYPES.map(anim => (
-                            <button 
-                                key={anim.id}
-                                onClick={() => setFormData({...formData, backgroundAnimation: anim.id})}
-                                className={`p-4 rounded-xl flex flex-col items-center justify-center gap-2 transition border ${formData.backgroundAnimation === anim.id ? 'bg-indigo-600 border-indigo-400 shadow-lg' : 'bg-black/20 border-white/10 hover:bg-white/10'}`}
-                            >
-                                <span className="text-2xl">{anim.icon}</span>
-                                <span className="text-xs font-bold">{anim.name}</span>
-                            </button>
+                            <button key={anim.id} onClick={() => setFormData({...formData, backgroundAnimation: anim.id})} className={`p-4 rounded-xl flex flex-col items-center justify-center gap-2 transition border ${formData.backgroundAnimation === anim.id ? 'bg-indigo-600 border-indigo-400 shadow-lg' : 'bg-black/20 border-white/10 hover:bg-white/10'}`}><span className="text-2xl drop-shadow-md">{anim.icon}</span><span className="text-[10px] font-bold text-center leading-tight whitespace-nowrap">{anim.name}</span></button>
                         ))}
                     </div>
                 </div>
-
                 <div className="p-6 bg-white/5 border border-white/10 rounded-3xl">
                     <h3 className="font-bold mb-4 flex gap-2 text-indigo-400"><Calendar size={18}/> العداد</h3>
-                    {/* ✅ تحديث: تغيير عنوان العداد */}
-                    <input value={formData.sectionTitles?.countdown || ''} onChange={e=>setFormData({...formData, sectionTitles: {...formData.sectionTitles, countdown: e.target.value}})} className="w-full bg-black/20 border border-white/10 p-3 rounded-xl mb-3 text-sm font-bold text-indigo-300" placeholder="عنوان القسم (افتراضي: باقي على المناسبة)" />
-                    
-                    <input value={formData.timerLabel} onChange={e=>setFormData({...formData, timerLabel: e.target.value})} className="w-full bg-black/20 border border-white/10 p-3 rounded-xl mb-3 text-sm" placeholder="وصف العداد (مثلاً: مر على حبنا..)" />
+                    <input value={formData.sectionTitles?.countdown || ''} onChange={e=>setFormData({...formData, sectionTitles: {...formData.sectionTitles, countdown: e.target.value}})} className="w-full bg-black/20 border border-white/10 p-3 rounded-xl mb-3 text-sm font-bold text-indigo-300" placeholder="عنوان القسم" />
+                    <input value={formData.timerLabel} onChange={e=>setFormData({...formData, timerLabel: e.target.value})} className="w-full bg-black/20 border border-white/10 p-3 rounded-xl mb-3 text-sm" placeholder="وصف العداد" />
                     <input type="datetime-local" value={formData.targetDate} onChange={e=>setFormData({...formData, targetDate: e.target.value})} className="w-full bg-black/20 border border-white/10 p-3 rounded-xl mb-2 text-sm"/>
-                    <p className="text-[10px] opacity-50 mt-1">* العداد يحسب تلقائياً (تصاعدي إذا كان التاريخ في الماضي، وتنازلي إذا كان في المستقبل).</p>
                 </div>
                 <div className="p-6 bg-white/5 border border-white/10 rounded-3xl">
                     <h3 className="font-bold mb-4 flex gap-2 text-pink-400"><Infinity size={18}/> الشريط المتحرك</h3>
-                    
-                    {/* ✅ عنوان لقسم الشرائط */}
-                    <input value={formData.sectionTitles?.marquees || ''} onChange={e=>setFormData({...formData, sectionTitles: {...formData.sectionTitles, marquees: e.target.value}})} className="w-full bg-black/20 border border-white/10 p-3 rounded-xl mb-4 text-sm font-bold text-pink-300" placeholder="عنوان القسم (اختياري)" />
-
+                    <input value={formData.sectionTitles?.marquees || ''} onChange={e=>setFormData({...formData, sectionTitles: {...formData.sectionTitles, marquees: e.target.value}})} className="w-full bg-black/20 border border-white/10 p-3 rounded-xl mb-4 text-sm font-bold text-pink-300" placeholder="عنوان القسم" />
                     <input value={tempMarquee.text} onChange={e=>setTempMarquee({...tempMarquee, text: e.target.value})} className="w-full bg-black/20 border border-white/10 p-3 rounded-xl text-sm mb-2" placeholder="الجملة..."/>
-                    <label className="text-[10px] opacity-50 mb-2 block">اختر أيقونة:</label>
                     <IconGrid selected={tempMarquee.icon} onSelect={icon => setTempMarquee({...tempMarquee, icon})} />
                     <button onClick={()=>addItem('marquees', tempMarquee.text?tempMarquee:null, ()=>setTempMarquee({...tempMarquee, text:''}))} className="w-full py-2 mt-4 bg-pink-500/20 text-pink-400 rounded-xl text-sm font-bold hover:bg-pink-500/30">+ إضافة</button>
                     <div className="mt-3 flex flex-wrap gap-2">{formData.marquees.map(m=><span key={m.id} className="text-xs bg-black/30 px-3 py-1 rounded-full border border-white/10 flex items-center gap-2">{m.text} <X size={10} onClick={()=>removeItem('marquees',m.id)} className="cursor-pointer hover:text-red-400"/></span>)}</div>
                 </div>
                 <div className="col-span-full p-6 bg-white/5 border border-white/10 rounded-3xl">
                     <h3 className="font-bold mb-4 flex gap-2 text-yellow-400"><Smile size={18}/> الكروت القلابة</h3>
-                    {/* ✅ تحديث: تغيير عنوان الكروت */}
-                    <input value={formData.sectionTitles?.cards || ''} onChange={e=>setFormData({...formData, sectionTitles: {...formData.sectionTitles, cards: e.target.value}})} className="w-full bg-black/20 border border-white/10 p-3 rounded-xl mb-4 text-sm font-bold text-yellow-300" placeholder="عنوان القسم (افتراضي: رسائل ليكِ ❤️)" />
-                    
+                    <input value={formData.sectionTitles?.cards || ''} onChange={e=>setFormData({...formData, sectionTitles: {...formData.sectionTitles, cards: e.target.value}})} className="w-full bg-black/20 border border-white/10 p-3 rounded-xl mb-4 text-sm font-bold text-yellow-300" placeholder="عنوان القسم" />
                     <div className="mb-4">
-                        <label className="text-[10px] opacity-50 mb-2 block">اختر أيقونة للكارت:</label>
                         <IconGrid selected={tempFlip.icon} onSelect={icon => setTempFlip({...tempFlip, icon})} />
-                        {/* ✅ نص مخصص أسفل الإيموجي */}
-                        <input value={tempFlip.hint} onChange={e=>setTempFlip({...tempFlip, hint: e.target.value})} className="w-full bg-black/20 border border-white/10 p-3 rounded-xl text-sm mt-4 mb-2" placeholder="النص الظاهر (اضغط للفتح)..."/>
-                        <input value={tempFlip.message} onChange={e=>setTempFlip({...tempFlip, message: e.target.value})} className="w-full bg-black/20 border border-white/10 p-3 rounded-xl text-sm" placeholder="الرسالة المخفية..."/>
+                        <input value={tempFlip.hint} onChange={e=>setTempFlip({...tempFlip, hint: e.target.value})} className="w-full bg-black/20 border border-white/10 p-3 rounded-xl text-sm mt-4 mb-2" placeholder="النص الظاهر..."/>
+                        <textarea value={tempFlip.message} onChange={e=>setTempFlip({...tempFlip, message: e.target.value})} className="w-full bg-black/20 border border-white/10 p-3 rounded-xl text-sm" placeholder="الرسالة المخفية (تدعم الإيموجي)..."/>
                     </div>
                     <button onClick={()=>addItem('flipCards', tempFlip.message?tempFlip:null, ()=>setTempFlip({...tempFlip, message:'', hint:''}))} className="w-full py-2 bg-yellow-500/20 text-yellow-400 rounded-xl text-sm font-bold hover:bg-yellow-500/30">+ إضافة كارت</button>
                     <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">{formData.flipCards.map(c=><div key={c.id} className="bg-black/30 p-3 rounded-xl border border-white/5 text-center text-xs relative"><div className="font-bold mb-1 opacity-70">{c.icon}</div><div className="truncate text-white">{c.message}</div><X size={12} onClick={()=>removeItem('flipCards',c.id)} className="absolute top-1 right-1 cursor-pointer text-red-400"/></div>)}</div>
                 </div>
-                
-                {/* ✅ حقل جديد: عنوان معرض الصور */}
                 <div className="col-span-full p-6 bg-white/5 border border-white/10 rounded-3xl">
                     <h3 className="font-bold mb-4 flex gap-2 text-blue-400"><ImageIcon size={18}/> معرض الصور</h3>
-                    <input value={formData.sectionTitles?.gallery || ''} onChange={e=>setFormData({...formData, sectionTitles: {...formData.sectionTitles, gallery: e.target.value}})} className="w-full bg-black/20 border border-white/10 p-3 rounded-xl text-sm font-bold text-blue-300" placeholder="عنوان القسم (افتراضي: أجمل الذكريات 📸)" />
+                    <input value={formData.sectionTitles?.gallery || ''} onChange={e=>setFormData({...formData, sectionTitles: {...formData.sectionTitles, gallery: e.target.value}})} className="w-full bg-black/20 border border-white/10 p-3 rounded-xl text-sm font-bold text-blue-300" placeholder="عنوان القسم" />
                 </div>
              </div>
           )}
@@ -920,16 +931,24 @@ const MemoryEditor = ({ onCancel, onSave, isDarkMode, initialData }) => {
                <div className="w-20 h-20 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4"><CheckCircle size={40}/></div>
                <h3 className="text-2xl font-bold">كل حاجة جاهزة!</h3>
                <div className="bg-white/5 border border-white/10 p-6 rounded-3xl text-right space-y-4">
-                   <div><label className="text-xs font-bold opacity-70 block mb-2">رسالة سرية (في الفوتر - اختياري)</label><textarea value={formData.secretMessage} onChange={e=>setFormData({...formData, secretMessage: e.target.value})} className="input-field bg-black/20 border-white/10 p-4 rounded-xl w-full h-24 text-sm" placeholder="رسالة صغيرة جداً..." /></div>
-                   <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl">
-                       <div className="text-sm font-bold flex items-center gap-2 opacity-70"><Globe size={16}/> نشر في معرض الأعمال (Public Portfolio)</div>
-                       <input type="checkbox" checked={formData.showInPortfolio} onChange={e=>setFormData({...formData, showInPortfolio: e.target.checked})} className="w-5 h-5 accent-indigo-500 cursor-pointer"/>
+                   <div className="grid grid-cols-2 gap-4">
+                       <div>
+                            <label className="text-xs font-bold opacity-70 block mb-2 text-purple-400">عنوان الزر</label>
+                            <input value={formData.secretButtonLabel} onChange={e=>setFormData({...formData, secretButtonLabel: e.target.value})} className="input-field bg-black/20 border-white/10 p-3 rounded-xl w-full text-sm" placeholder="مثال: مفاجأة" />
+                       </div>
+                       <div>
+                            <label className="text-xs font-bold opacity-70 block mb-2 text-purple-400">عنوان النافذة (Modal Title)</label>
+                            <input value={formData.secretModalTitle} onChange={e=>setFormData({...formData, secretModalTitle: e.target.value})} className="input-field bg-black/20 border-white/10 p-3 rounded-xl w-full text-sm" placeholder="مثال: رسالة خاصة 💌" />
+                       </div>
                    </div>
-                   <p className="text-[10px] opacity-40 pr-2">لو مفعلتش الخيار ده، الرابط هيكون خاص بالعميل بس.</p>
+
+                   <div><label className="text-xs font-bold opacity-70 block mb-2">الرسالة السرية</label><textarea value={formData.secretMessage} onChange={e=>setFormData({...formData, secretMessage: e.target.value})} className="input-field bg-black/20 border-white/10 p-4 rounded-xl w-full h-24 text-sm" placeholder="اكتب الرسالة..." /></div>
+                   <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl"><div className="text-sm font-bold flex items-center gap-2 opacity-70"><Globe size={16}/> نشر في معرض الأعمال</div><input type="checkbox" checked={formData.showInPortfolio} onChange={e=>setFormData({...formData, showInPortfolio: e.target.checked})} className="w-5 h-5 accent-indigo-500 cursor-pointer"/></div>
                </div>
                <button onClick={handleSave} disabled={saving} className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl font-bold text-white shadow-xl hover:scale-[1.02] transition">{saving ? 'جارِ الحفظ...' : 'حفظ وتوليد رابط العميل 🔗'}</button>
             </div>
           )}
+
         </div>
         {step < 4 && <div className="p-6 border-t border-white/5 flex justify-end"><button onClick={()=>setStep(s=>s+1)} className="px-8 py-3 bg-white text-black rounded-xl font-bold flex items-center gap-2 hover:bg-gray-200 transition">التالي <ChevronRight size={18}/></button></div>}
       </div>
@@ -937,47 +956,83 @@ const MemoryEditor = ({ onCancel, onSave, isDarkMode, initialData }) => {
   );
 };
 
-// ... PasswordWall and MemoryView helpers ...
+// ✅ مكون النافذة المنبثقة للرسالة السرية (تصميم احترافي + أنيميشن قوي)
+const SecretModal = ({ isOpen, onClose, message, title, isDarkMode, accentColor }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/90 backdrop-blur-md transition-opacity duration-300" onClick={onClose}></div>
+            <div className={`relative z-10 w-full max-w-lg p-1 rounded-[2.5rem] shadow-2xl transform transition-all animate-modal-spring overflow-hidden`}>
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/10 rounded-[2.5rem] pointer-events-none"></div>
+                <div className={`relative bg-[#0F0F1A] border border-white/10 rounded-[2.5rem] overflow-hidden`}>
+                    <div className="h-32 bg-gradient-to-br from-indigo-900/30 to-purple-900/30 flex items-center justify-center relative overflow-hidden">
+                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                         <div className="w-20 h-20 rounded-full bg-black/40 border border-white/10 backdrop-blur-md flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.1)] z-10">
+                            <MailOpen size={36} style={{ color: accentColor }} className="drop-shadow-lg" />
+                         </div>
+                         <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-white/10 text-white rounded-full transition z-20"><X size={20}/></button>
+                    </div>
+                    <div className="p-8 text-center">
+                        <h3 className="text-2xl font-bold font-alexandria mb-6 text-white drop-shadow-md">{title || "رسالة خاصة 💌"}</h3>
+                        <div className="max-h-[50vh] overflow-y-auto custom-scrollbar px-2">
+                             <p className="text-lg leading-loose text-gray-200 font-medium whitespace-pre-line dir-rtl" style={{ textShadow: '0 0 10px rgba(0,0,0,0.5)' }}>
+                                {message}
+                             </p>
+                        </div>
+                    </div>
+                    <div className="p-6 border-t border-white/5 bg-black/20 flex justify-center">
+                        <button onClick={onClose} className="px-8 py-3 rounded-xl text-sm font-bold bg-white/5 hover:bg-white/10 border border-white/10 text-white transition">إغلاق</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
-// ✅ تحديث الكروت القلابة: زجاجية سوداء + أيقونات متوهجة
-const FlipCard = ({ iconName, message, hint }) => {
+// ✅ تحديث الكروت القلابة: شفافية أعلى (Glassmorphism) + حواف مضيئة + أنيميشن للمحتوى
+const FlipCard = ({ iconName, message, hint, accentColor }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const Icon = ICON_LIBRARY[iconName] || Star;
-
   return (
-    <div className="group w-full h-48 cursor-pointer [perspective:1000px]" onClick={() => setIsFlipped(!isFlipped)}>
+    <div className="group/card w-full h-64 cursor-pointer [perspective:1000px]" onClick={() => setIsFlipped(!isFlipped)}>
       <div className={`relative w-full h-full duration-700 [transform-style:preserve-3d] transition-transform ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`}>
         
-        {/* Front Face - Black Glass */}
+        {/* Front Face */}
         <div 
-            className="absolute w-full h-full [backface-visibility:hidden] rounded-[2rem] flex flex-col items-center justify-center shadow-lg border border-white/10 backdrop-blur-md bg-black/40 text-white"
+            className="absolute w-full h-full [backface-visibility:hidden] rounded-[2rem] flex flex-col items-center justify-center text-center px-4 shadow-xl border border-white/10 backdrop-blur-md bg-gradient-to-br from-white/5 to-transparent text-white"
         >
-          <div className="p-4 bg-white/5 rounded-full mb-3 shadow-[0_0_15px_rgba(255,255,255,0.1)] border border-white/10">
-              <Icon size={32} className="animate-pulse drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+          <div className="p-5 bg-white/5 rounded-full mb-4 shadow-[0_0_15px_rgba(255,255,255,0.05)] border border-white/10">
+              <Icon size={36} style={{ color: accentColor }} className="animate-pulse drop-shadow-lg" />
           </div>
-          <span className="text-xs font-bold opacity-80 drop-shadow-md">{hint || "اضغط لفتح الرسالة"}</span>
+          <span className="text-sm font-bold opacity-80 tracking-wide drop-shadow-md">{hint || "اضغط لفتح الرسالة"}</span>
         </div>
 
-        {/* Back Face - Black Glass */}
+        {/* Back Face - شفافية Glassmorphism متطورة + حواف مضيئة */}
         <div 
-            className="absolute w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)] rounded-[2rem] flex items-center justify-center p-6 text-center shadow-xl border border-white/20 backdrop-blur-xl bg-black/70 text-white"
+            className="absolute w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)] rounded-[2rem] flex flex-col items-center justify-center text-center p-6 shadow-[0_0_30px_rgba(0,0,0,0.3)] backdrop-blur-3xl bg-black/10 overflow-hidden"
+            style={{ '--accent-color': accentColor, '--accent-color-10': `${accentColor}15`, '--accent-color-30': `${accentColor}30`, '--accent-color-50': `${accentColor}60` }}
         >
-          <div className="overflow-y-auto max-h-full no-scrollbar w-full">
-             <Quote size={20} className="mb-2 opacity-30 mx-auto drop-shadow-md" />
-             <p className="font-bold text-sm leading-relaxed drop-shadow-sm">{message}</p>
+          {/* حواف مضيئة متذبذبة (Glowing Edges) */}
+          <div className="absolute inset-0 rounded-[2rem] animate-edge-glow pointer-events-none" style={{border: `1px solid ${accentColor}80`}}></div>
+
+          {/* المحتوى الداخلي مع أنيميشن الدخول والخروج */}
+          <div 
+            className={`relative z-10 w-full flex flex-col items-center justify-center h-full overflow-y-auto no-scrollbar transition-all duration-700 delay-100 ease-out transform ${isFlipped ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-95'}`}
+          > 
+             <Icon size={28} style={{ color: accentColor }} className="mb-4 drop-shadow-[0_0_8px_currentColor] animate-bounce-slow" />
+             <p className="font-bold text-lg leading-relaxed text-white drop-shadow-md px-2">
+                 {message}
+             </p>
           </div>
         </div>
-
       </div>
     </div>
   );
 };
 
-// ✅ Improved Professional Countdown (Transparent & Modern)
-const CountdownTimer = ({ targetDate, isDarkMode, label }) => {
+const CountdownTimer = ({ targetDate, isDarkMode, label, accentColor }) => {
   const [timeLeft, setTimeLeft] = useState({});
   const [isPast, setIsPast] = useState(false);
-
   useEffect(() => {
     const timer = setInterval(() => {
       const target = new Date(targetDate);
@@ -985,7 +1040,6 @@ const CountdownTimer = ({ targetDate, isDarkMode, label }) => {
       const diff = target - now;
       const isPastDate = diff < 0;
       setIsPast(isPastDate);
-      
       const absDiff = Math.abs(diff);
       setTimeLeft({
         years: Math.floor(absDiff / (1000 * 60 * 60 * 24 * 365)),
@@ -1008,10 +1062,10 @@ const CountdownTimer = ({ targetDate, isDarkMode, label }) => {
 
   return (
     <div className="relative group">
-        <div className={`absolute -inset-1 rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-500 ${isDarkMode ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500' : 'bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-300'}`}></div>
+        <div className={`absolute -inset-1 rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-500 bg-gradient-to-r from-transparent via-white/20 to-transparent`}></div>
         <div className={`relative bg-white/5 border border-white/10 backdrop-blur-xl p-8 rounded-[2rem] text-center shadow-2xl`}>
-            {label && <h3 className="text-lg font-bold opacity-80 mb-6 font-alexandria flex items-center justify-center gap-2"><Clock size={18} className="text-indigo-400"/> {label}</h3>}
-            {!label && <h3 className="text-lg font-bold opacity-80 mb-6 font-alexandria flex items-center justify-center gap-2"><Clock size={18} className="text-indigo-400"/> {isPast ? 'مرّ على ذكرانا' : 'باقي على المناسبة'}</h3>}
+            {label && <h3 className="text-lg font-bold opacity-80 mb-6 font-alexandria flex items-center justify-center gap-2"><Clock size={18} style={{color: accentColor}}/> {label}</h3>}
+            {!label && <h3 className="text-lg font-bold opacity-80 mb-6 font-alexandria flex items-center justify-center gap-2"><Clock size={18} style={{color: accentColor}}/> {isPast ? 'مرّ على ذكرانا' : 'باقي على المناسبة'}</h3>}
             <div className="flex flex-wrap justify-center gap-3 md:gap-4 dir-rtl">
                 {timeLeft.years > 0 && <TimeBox val={timeLeft.years} label="سنة" />}
                 <TimeBox val={timeLeft.months} label="شهر" />
@@ -1025,29 +1079,23 @@ const CountdownTimer = ({ targetDate, isDarkMode, label }) => {
   );
 };
 
-// ✅ صفحة الباسورد موحدة التصميم ومخصصة بالكامل
 const PasswordWall = ({ memoryData, onUnlock, isDarkMode }) => {
   const [input, setInput] = useState(''); const [error, setError] = useState(false);
   const handleSubmit = (e) => { e.preventDefault(); if (input === memoryData.password) onUnlock(); else { setError(true); setTimeout(() => setError(false), 800); } };
-  
   const PageIcon = ICON_LIBRARY[memoryData.loginIcon] || Lock;
+  const accent = memoryData.themeColors?.accent || '#f472b6';
 
   return (
     <div className={`min-h-screen flex items-center justify-center p-4 relative overflow-hidden ${isDarkMode ? 'bg-[#050511] text-white' : 'bg-[#fff0f5] text-gray-900'}`}>
       <DynamicBackground isDarkMode={isDarkMode} type={memoryData.backgroundAnimation || 'classic'} customColors={memoryData.themeColors} />
-      
       <div className="max-w-md w-full p-8 text-center relative z-10 bg-black/30 border border-white/10 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl animate-fade-in">
         <div className="w-24 h-24 mx-auto rounded-full flex items-center justify-center mb-6 animate-float bg-white/5 text-white shadow-[0_0_20px_rgba(255,255,255,0.1)] border border-white/10 relative overflow-hidden">
-            {memoryData.loginImage ? (
-                <img src={memoryData.loginImage} className="w-full h-full object-cover" />
-            ) : (
-                <PageIcon size={40} className="drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
-            )}
+            {memoryData.loginImage ? <img src={memoryData.loginImage} className="w-full h-full object-cover" /> : <PageIcon size={40} style={{color: accent}} className="drop-shadow-lg" />}
         </div>
         <h2 className="text-3xl font-bold mb-2 font-alexandria drop-shadow-md">{memoryData.loginTitle || `رسالة خاصة`}</h2>
         <p className="mb-8 text-sm opacity-70 leading-relaxed max-w-[80%] mx-auto">{memoryData.loginDescription || "المحتوى ده سري، اكتب الباسورد عشان تفتح الهدية."}</p>
         <form onSubmit={handleSubmit}>
-          <input type="text" value={input} onChange={(e) => setInput(e.target.value)} className={`w-full p-5 text-center text-2xl font-bold tracking-[0.5em] border-2 rounded-2xl outline-none transition mb-6 bg-black/40 border-white/10 focus:border-white/40 shadow-inner ${error ? 'border-red-500 animate-shake' : ''}`} placeholder={memoryData.loginPlaceholder || "****"} autoFocus />
+          <input type="text" value={input} onChange={(e) => setInput(e.target.value)} className={`w-full p-5 text-center text-2xl font-bold tracking-[0.5em] border-2 rounded-2xl outline-none transition mb-6 bg-black/40 border-white/10 focus:border-white/50 shadow-inner ${error ? 'border-red-500 animate-shake' : ''}`} placeholder={memoryData.loginPlaceholder || "****"} autoFocus />
           <button type="submit" className="w-full py-4 rounded-2xl font-bold text-white bg-white/10 hover:bg-white/20 border border-white/10 transition shadow-lg backdrop-blur-md">{memoryData.loginButtonText || "فتح الرسالة ✨"}</button>
         </form>
       </div>
@@ -1055,214 +1103,130 @@ const PasswordWall = ({ memoryData, onUnlock, isDarkMode }) => {
   );
 };
 
-// ✅ Updated Music Player: Transparent & Vinyl Style
 const MusicPlayer = ({ songUrl, title, image, isDarkMode }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
     const audioRef = useRef(null);
-    
-    // Auto-play logic
     useEffect(() => {
-        const attemptPlay = async () => {
-            if (audioRef.current && songUrl) {
-                try {
-                    await audioRef.current.play();
-                    setIsPlaying(true);
-                } catch (e) {
-                    console.log("Autoplay blocked:", e);
-                }
-            }
-        };
-        const timer = setTimeout(attemptPlay, 1000);
-        return () => clearTimeout(timer);
+        const attemptPlay = async () => { if (audioRef.current && songUrl) { try { await audioRef.current.play(); setIsPlaying(true); } catch (e) { console.log("Autoplay blocked:", e); } } };
+        const timer = setTimeout(attemptPlay, 1000); return () => clearTimeout(timer);
     }, [songUrl]);
-
-    // Handle Play/Pause
-    useEffect(() => {
-        if (audioRef.current) {
-            if (isPlaying) audioRef.current.play().catch(e=>console.error(e));
-            else audioRef.current.pause();
-        }
-    }, [isPlaying]);
-
-    // Update Progress Bar
-    const handleTimeUpdate = () => {
-        if(audioRef.current) {
-            const current = audioRef.current.currentTime;
-            const duration = audioRef.current.duration;
-            setProgress((current / duration) * 100);
-        }
-    };
-
+    useEffect(() => { if (audioRef.current) { if (isPlaying) audioRef.current.play().catch(e=>console.error(e)); else audioRef.current.pause(); } }, [isPlaying]);
+    const handleTimeUpdate = () => { if(audioRef.current) { setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100); } };
     if (!songUrl) return null;
-
     return (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-sm rounded-[2rem] p-3 backdrop-blur-xl border border-white/10 shadow-2xl transition-all duration-500 animate-slide-up bg-black/30 overflow-hidden group hover:bg-black/50">
-            {/* Background Blur Effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition duration-700 animate-pulse pointer-events-none"></div>
-            
             <div className="flex items-center gap-4 relative z-10">
-                {/* Rotating Album Art */}
-                <div className={`w-12 h-12 rounded-full border-2 border-white/20 overflow-hidden relative shrink-0 shadow-lg ${isPlaying ? 'animate-spin-slow' : ''}`}>
-                    <img src={image || "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=150&q=80"} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center">
-                        <div className="w-3 h-3 bg-black rounded-full border border-white/30"></div>
-                    </div>
-                </div>
-
-                <div className="flex-1 min-w-0">
-                    <div className="flex flex-col">
-                        {/* Song Title (Marquee if long) */}
-                        <div className="relative overflow-hidden h-5 w-full">
-                            <span className={`text-sm font-bold text-white whitespace-nowrap absolute ${isPlaying ? 'animate-marquee' : ''}`}>
-                                {title || 'موسيقى الذكرى'}
-                            </span>
-                        </div>
-                        <span className="text-[10px] text-gray-300 flex items-center gap-1">
-                            {isPlaying ? <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span> : <span className="w-1.5 h-1.5 bg-gray-500 rounded-full"></span>}
-                            {isPlaying ? 'تشغيل الآن...' : 'متوقف'}
-                        </span>
-                    </div>
-                    {/* Progress Bar */}
-                    <div className="w-full h-1 bg-white/10 rounded-full mt-2 overflow-hidden">
-                        <div className="h-full bg-indigo-500 transition-all duration-500" style={{width: `${progress}%`}}></div>
-                    </div>
-                </div>
-
-                <button 
-                    onClick={() => setIsPlaying(!isPlaying)} 
-                    className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95 border border-white/10 backdrop-blur-md"
-                >
-                    {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />}
-                </button>
+                <div className={`w-12 h-12 rounded-full border-2 border-white/20 overflow-hidden relative shrink-0 shadow-lg ${isPlaying ? 'animate-spin-smooth' : ''}`}><img src={image || "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=150&q=80"} className="w-full h-full object-cover" /><div className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center"><div className="w-3 h-3 bg-black rounded-full border border-white/30"></div></div></div>
+                <div className="flex-1 min-w-0"><div className="flex flex-col"><div className="relative overflow-hidden h-5 w-full"><span className={`text-sm font-bold text-white whitespace-nowrap absolute ${isPlaying ? 'animate-marquee' : ''}`}>{title || 'موسيقى الذكرى'}</span></div><span className="text-[10px] text-gray-300 flex items-center gap-1">{isPlaying ? <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span> : <span className="w-1.5 h-1.5 bg-gray-500 rounded-full"></span>}{isPlaying ? 'تشغيل الآن...' : 'متوقف'}</span></div><div className="w-full h-1 bg-white/10 rounded-full mt-2 overflow-hidden"><div className="h-full bg-indigo-500 transition-all duration-500" style={{width: `${progress}%`}}></div></div></div>
+                <button onClick={() => setIsPlaying(!isPlaying)} className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95 border border-white/10 backdrop-blur-md">{isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />}</button>
             </div>
-
-            {/* Hidden Audio Element */}
-            <audio 
-                ref={audioRef} 
-                src={songUrl} 
-                loop 
-                onTimeUpdate={handleTimeUpdate}
-            />
-            
-            <style>{`
-                @keyframes marquee { 
-                    0% { transform: translateX(100%); } 
-                    100% { transform: translateX(-100%); } 
-                }
-                .animate-marquee { animation: marquee 10s linear infinite; }
-            `}</style>
+            <audio ref={audioRef} src={songUrl} loop onTimeUpdate={handleTimeUpdate}/>
+            <style>{`@keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } } .animate-marquee { animation: marquee 10s linear infinite; }`}</style>
         </div>
     );
 };
 
 const MemoryView = ({ data, isDarkMode }) => {
+  const [showSecret, setShowSecret] = useState(false);
+  const accentColor = data.themeColors?.accent || '#f472b6'; 
+
   return (
     <div className={`min-h-screen relative overflow-x-hidden pb-10 transition-colors duration-500 font-[Cairo] ${isDarkMode ? 'bg-[#050511] text-white' : 'bg-[#fff5f7] text-gray-800'}`}>
       <DynamicBackground isDarkMode={isDarkMode} type={data.backgroundAnimation || 'classic'} customColors={data.themeColors} />
-      
-      {/* ✅ تمرير بيانات الأغنية للمشغل الجديد */}
-      <MusicPlayer 
-        songUrl={data.songUrl} 
-        title={data.songTitle} 
-        image={data.songImage} 
-        isDarkMode={isDarkMode} 
-      />
-
+      <MusicPlayer songUrl={data.songUrl} title={data.songTitle} image={data.songImage} isDarkMode={isDarkMode} />
       <header className="relative h-[80vh] flex items-center justify-center overflow-hidden">
-        {data.coverImage ? (
-             data.coverType === 'video' ? (
-                 <>
-                    <div className={`absolute inset-0 bg-gradient-to-b z-10 ${isDarkMode ? 'from-black/30 via-[#050511]/60 to-[#050511]' : 'from-white/10 via-[#fff5f7]/60 to-[#fff5f7]'}`}></div>
-                    <video src={data.coverImage} className="absolute inset-0 w-full h-full object-cover opacity-80" autoPlay muted loop playsInline />
-                 </>
-             ) : (
-                 <>
-                    <div className={`absolute inset-0 bg-gradient-to-b z-10 ${isDarkMode ? 'from-black/30 via-[#050511]/60 to-[#050511]' : 'from-white/10 via-[#fff5f7]/60 to-[#fff5f7]'}`}></div>
-                    <img src={data.coverImage} className="absolute inset-0 w-full h-full object-cover opacity-80" alt="Cover" />
-                 </>
-             )
-        ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 to-purple-900"></div>
-        )}
-        
-        {/* ✅ تدرج إضافي لدمج الغلاف مع الخلفية */}
+        {data.coverImage ? (data.coverType === 'video' ? <><div className={`absolute inset-0 bg-gradient-to-b z-10 ${isDarkMode ? 'from-black/30 via-[#050511]/60 to-[#050511]' : 'from-white/10 via-[#fff5f7]/60 to-[#fff5f7]'}`}></div><video src={data.coverImage} className="absolute inset-0 w-full h-full object-cover opacity-80" autoPlay muted loop playsInline /></> : <><div className={`absolute inset-0 bg-gradient-to-b z-10 ${isDarkMode ? 'from-black/30 via-[#050511]/60 to-[#050511]' : 'from-white/10 via-[#fff5f7]/60 to-[#fff5f7]'}`}></div><img src={data.coverImage} className="absolute inset-0 w-full h-full object-cover opacity-80" alt="Cover" /></>) : <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 to-purple-900"></div>}
         <div className="absolute inset-0 bg-gradient-to-t from-[#050511] via-transparent to-transparent z-10"></div>
-
         <div className="relative z-20 text-center px-4 max-w-2xl mt-20">
-           {data.eventTitle && <div className="inline-block px-4 py-2 rounded-full backdrop-blur-md mb-6 border font-bold">✨ {data.eventTitle}</div>}
-           <h1 className="text-4xl md:text-6xl font-extrabold mb-6 font-alexandria drop-shadow-lg">{data.recipientName}</h1>
-           <p className="text-xl md:text-2xl font-light mb-8">{data.mainMessage}</p>
+           {data.eventTitle && <div className="inline-block px-4 py-2 rounded-full backdrop-blur-md mb-6 border font-bold animate-fade-in">✨ {data.eventTitle}</div>}
+           <h1 className="text-4xl md:text-6xl font-extrabold mb-6 font-alexandria drop-shadow-lg animate-slide-up">{data.recipientName}</h1>
+           <p className="text-xl md:text-2xl font-light mb-8 animate-slide-up" style={{animationDelay: '100ms'}}>{data.mainMessage}</p>
         </div>
       </header>
       <main className="container mx-auto px-4 relative z-20 space-y-24 -mt-20">
-        {/* ✅ استخدام عنوان القسم المخصص للعداد */}
-        {data.targetDate && <ScrollReveal><section><CountdownTimer targetDate={data.targetDate} isDarkMode={isDarkMode} label={data.timerLabel || data.sectionTitles?.countdown} /></section></ScrollReveal>}
+        {data.targetDate && <ScrollReveal><section><CountdownTimer targetDate={data.targetDate} isDarkMode={isDarkMode} label={data.timerLabel || data.sectionTitles?.countdown} accentColor={accentColor} /></section></ScrollReveal>}
         
-        {/* ✅ تحسين شكل الشريط المتحرك: بدون تكرار، زجاجي */}
         {data.marquees?.length > 0 && (
             <ScrollReveal>
-            <section className="relative -mx-4">
-                {data.sectionTitles?.marquees && <h3 className="text-center text-xl font-bold font-alexandria mb-6 opacity-80">{data.sectionTitles.marquees}</h3>}
-                {/* الخلفية الزجاجية للشريط */}
-                <div className="py-6 backdrop-blur-md border-y border-white/10 bg-white/5 shadow-lg">
-                    {data.marquees.map((m, i) => {
-                        const Icon = ICON_LIBRARY[m.icon] || Heart;
-                        return (
-                            <div key={i} className="flex whitespace-nowrap overflow-hidden justify-center"> {/* Center text */}
-                                <div className="flex gap-4 min-w-full px-4 items-center justify-center animate-pulse"> {/* Simple animation instead of scroll if single */}
-                                    <div className="flex items-center gap-3 font-bold text-xl opacity-90 drop-shadow-md">
-                                        <Icon size={24} className="drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
-                                        <span>{m.text}</span>
-                                        <Icon size={24} className="drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
-                                    </div>
-                                </div>
+            <section className="relative -mx-4 space-y-4 px-4">
+                {data.sectionTitles?.marquees && <h3 className="text-center text-xl font-bold font-alexandria mb-6 opacity-80 mx-auto max-w-[90%] break-words">{data.sectionTitles.marquees}</h3>}
+                {data.marquees.map((m, i) => {
+                    const Icon = ICON_LIBRARY[m.icon] || Heart;
+                    return (
+                        <div key={i} className="py-5 rounded-2xl backdrop-blur-md border border-white/10 bg-white/5 shadow-lg flex justify-center items-center">
+                            <div className="animate-soft-pulse flex items-center gap-3 font-bold text-xl md:text-2xl text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]">
+                                <Icon size={28} style={{color: accentColor}} className="drop-shadow-lg" /><span className="tracking-wide text-center">{m.text}</span><Icon size={28} style={{color: accentColor}} className="drop-shadow-lg" />
                             </div>
-                        );
-                    })}
-                </div>
+                        </div>
+                    );
+                })}
             </section>
             </ScrollReveal>
         )}
-        
-        {/* ✅ استخدام عنوان القسم المخصص للرسائل + تمرير الألوان للكروت */}
-        {data.flipCards?.length > 0 && 
-        <ScrollReveal>
-        <section>
-            <h2 className="text-center text-3xl font-bold font-alexandria mb-10">{data.sectionTitles?.cards || 'رسائل ليكِ ❤️'}</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{data.flipCards.map((card, i) => (<FlipCard key={i} iconName={card.icon} message={card.message} hint={card.hint} isDarkMode={isDarkMode} />))}</div>
-        </section>
-        </ScrollReveal>}
-        
-        {/* ✅ استخدام عنوان القسم المخصص للمعرض (يدعم الفيديو الآن) */}
-        {data.photos?.length > 0 && 
-        <ScrollReveal>
-        <section>
-            <h2 className="text-center text-3xl font-bold font-alexandria mb-10">{data.sectionTitles?.gallery || 'أجمل الذكريات 📸'}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {data.photos.map((photo, i) => (
-                    <div key={i} className="bg-white/5 border border-white/10 p-4 rounded-3xl group hover:-translate-y-2 transition duration-300">
-                        <div className="aspect-[4/5] rounded-2xl overflow-hidden mb-4 relative">
-                            {photo.type === 'video' ? (
-                                <AutoPlayVideo src={photo.img} className="w-full h-full object-cover" />
-                            ) : (
-                                <img src={photo.img} className="w-full h-full object-cover transition duration-700 group-hover:scale-110" loading="lazy" />
-                            )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition duration-300 flex items-end p-4">
-                                <p className="text-white text-sm">{photo.title}</p>
+
+        {data.flipCards?.length > 0 && (
+            <section>
+                <ScrollReveal><h2 className="text-center text-3xl font-bold font-alexandria mb-10 mx-auto max-w-[90%] break-words">{data.sectionTitles?.cards || 'رسائل ليكِ ❤️'}</h2></ScrollReveal>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {/* تأخير تتابعي للكروت */}
+                    {data.flipCards.map((card, i) => (
+                        <ScrollReveal key={i} delay={i * 100}>
+                            <FlipCard iconName={card.icon} message={card.message} hint={card.hint} accentColor={accentColor} />
+                        </ScrollReveal>
+                    ))}
+                </div>
+            </section>
+        )}
+
+        {data.photos?.length > 0 && (
+            <section>
+                <ScrollReveal><h2 className="text-center text-3xl font-bold font-alexandria mb-10 mx-auto max-w-[90%] break-words">{data.sectionTitles?.gallery || 'أجمل الذكريات 📸'}</h2></ScrollReveal>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* تأخير تتابعي للصور لظهور احترافي متسلسل */}
+                    {data.photos.map((photo, i) => (
+                        <ScrollReveal key={i} delay={i * 150}>
+                            <div className="bg-white/5 border border-white/10 p-4 rounded-3xl group hover:-translate-y-2 transition duration-500">
+                                <div className="aspect-[4/5] rounded-2xl overflow-hidden mb-4 relative">
+                                    {photo.type === 'video' ? <AutoPlayVideo src={photo.img} className="w-full h-full object-cover" /> : <img src={photo.img} className="w-full h-full object-cover transition duration-700 group-hover:scale-110" loading="lazy" />}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition duration-300 flex items-end p-4">
+                                        <p className="text-white text-sm">{photo.title}</p>
+                                    </div>
+                                </div>
+                                <div className="text-center">
+                                    <h3 className="font-bold text-lg mb-1">{photo.title}</h3>
+                                    <p className="text-sm opacity-60 leading-relaxed">{photo.desc}</p>
+                                </div>
                             </div>
+                        </ScrollReveal>
+                    ))}
+                </div>
+            </section>
+        )}
+
+        <footer className="pt-20 pb-32 text-center relative">
+            {data.secretMessage && (
+                <>
+                    <ScrollReveal>
+                        <div className="mb-10 text-center relative z-20">
+                             <button 
+                                onClick={() => setShowSecret(true)}
+                                className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-full border border-white/20 bg-white/5 backdrop-blur-xl shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-105 transition-all duration-300 animate-bounce-slow text-white"
+                            >
+                                <span className="relative z-10 flex items-center gap-2 font-bold tracking-wide">
+                                    <Lock size={20} style={{ color: accentColor }} className="group-hover:text-white transition-colors" /> 
+                                    {data.secretButtonLabel || "رسالة سرية 🔒"}
+                                </span>
+                                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition duration-500"></div>
+                             </button>
                         </div>
-                        <div className="text-center">
-                            <h3 className="font-bold text-lg mb-1">{photo.title}</h3>
-                            <p className="text-sm opacity-60 leading-relaxed">{photo.desc}</p>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </section>
-        </ScrollReveal>}
-        
-        <footer className="pt-20 pb-32 text-center relative">{data.secretMessage && <div className="mb-10 animate-pulse"><p className="text-[10px] tracking-[0.5em] opacity-30 hover:opacity-100 transition duration-500 cursor-help" title="Secret Message">{data.secretMessage}</p></div>}<div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold opacity-50"><Lock size={12} /> Designed with love by {data.senderName}</div></footer>
+                    </ScrollReveal>
+                    <SecretModal isOpen={showSecret} onClose={() => setShowSecret(false)} message={data.secretMessage} title={data.secretModalTitle} isDarkMode={isDarkMode} accentColor={accentColor} />
+                </>
+            )}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold opacity-50"><Heart size={12} className="text-red-500 fill-current" /> Designed with love by {data.senderName}</div>
+        </footer>
       </main>
     </div>
   );
@@ -1275,61 +1239,57 @@ const App = () => {
   const [editingMemory, setEditingMemory] = useState(null); 
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
-    if (id) { setMemoryId(id); fetchMemory(id); } else { setRoute('portfolio'); }
-    document.body.className = isDarkMode ? 'dark' : 'light';
-
-    if (typeof auth !== 'undefined') {
-        signInAnonymously(auth).catch(err => console.error("Auth Error:", err));
-    }
+  useEffect(() => { 
+    const params = new URLSearchParams(window.location.search); 
+    const id = params.get('id'); 
+    if (id) { 
+        setMemoryId(id); 
+        fetchMemory(id); 
+    } else { 
+        // ✅ إيقاف شاشة التحميل فوراً في الموقع الرئيسي
+        setIsLoading(false);
+        setRoute('portfolio'); 
+    } 
+    document.body.className = isDarkMode ? 'dark' : 'light'; 
+    if (typeof auth !== 'undefined') { 
+        signInAnonymously(auth).catch(err => console.error("Auth Error:", err)); 
+    } 
   }, [isDarkMode]);
 
-  const fetchMemory = async (id) => {
-    try {
-       const docSnap = await getDoc(doc(db, "memories", id));
-       if (docSnap.exists()) { setMemoryData(docSnap.data()); setRoute('viewer'); } 
-       else { setRoute('portfolio'); }
-    } catch { setRoute('portfolio'); }
+  const fetchMemory = async (id) => { 
+    try { 
+        const docSnap = await getDoc(doc(db, "memories", id)); 
+        if (docSnap.exists()) { 
+            setMemoryData(docSnap.data()); 
+            setTimeout(() => {
+                setIsLoading(false);
+                setRoute('viewer'); 
+            }, 2500); // إعطاء مساحة لرؤية شاشة التحميل الاحترافية
+        } else { 
+            setIsLoading(false);
+            setRoute('portfolio'); 
+        } 
+    } catch { 
+        setIsLoading(false);
+        setRoute('portfolio'); 
+    } 
   };
+  const AdminLogin = ({ onCancel, onLogin }) => { const [pass, setPass] = useState(''); return ( <div className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md ${isDarkMode ? 'bg-black/80' : 'bg-white/80'}`}> <div className="bg-white/10 border border-white/20 p-8 rounded-3xl w-full max-w-sm text-center relative backdrop-blur-xl"> <button onClick={onCancel} className="absolute top-4 left-4 opacity-50"><X size={20}/></button> <h2 className="text-xl font-bold mb-4">لوحة المالك</h2> <input type="password" className="input-field mb-4 text-center" value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••"/> <button onClick={()=>{ if(pass==='admin123') onLogin(); else alert('خطأ'); }} className="btn w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">دخول</button> </div> </div> ); };
+  
+  // ✅ تمرير إعدادات الذكرى لشاشة التحميل (النص والأنيميشن والألوان)
+  if (isLoading) {
+      return <LoadingScreen 
+          text={memoryData?.loadingText || "جاري التحميل"} 
+          animationType={memoryData?.backgroundAnimation || "classic"} 
+          themeColors={memoryData?.themeColors}
+          isDarkMode={isDarkMode}
+      />;
+  }
 
-  const AdminLogin = ({ onCancel, onLogin }) => {
-     const [pass, setPass] = useState('');
-     return (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md ${isDarkMode ? 'bg-black/80' : 'bg-white/80'}`}>
-           <div className="bg-white/10 border border-white/20 p-8 rounded-3xl w-full max-w-sm text-center relative backdrop-blur-xl">
-              <button onClick={onCancel} className="absolute top-4 left-4 opacity-50"><X size={20}/></button>
-              <h2 className="text-xl font-bold mb-4">لوحة المالك</h2>
-              <input type="password" className="input-field mb-4 text-center" value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••"/>
-              <button onClick={()=>{ if(pass==='admin123') onLogin(); else alert('خطأ'); }} className="btn w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">دخول</button>
-           </div>
-        </div>
-     );
-  };
-
-  if (route === 'loading') return <div className="h-screen flex items-center justify-center">جارِ التحميل...</div>;
-  if (route === 'viewer') return isUnlocked ? <MemoryView data={memoryData} isDarkMode={isDarkMode} /> : <PasswordWall 
-    memoryData={memoryData} // ✅ تمرير البيانات لصفحة الباسورد
-    correctPassword={memoryData.password} 
-    senderName={memoryData.senderName} 
-    onUnlock={()=>setIsUnlocked(true)} 
-    isDarkMode={isDarkMode} 
-  />;
-   
-  return (
-    <>
-      {route === 'admin_dashboard' && <AdminDashboard isDarkMode={isDarkMode} onLogOut={()=>setRoute('portfolio')} onCreateNew={()=>{setEditingMemory(null); setRoute('admin_editor');}} onEdit={(mem) => { setEditingMemory(mem); setRoute('admin_editor'); }} />}
-      {route === 'admin_editor' && <MemoryEditor isDarkMode={isDarkMode} initialData={editingMemory} onCancel={()=>setRoute('admin_dashboard')} onSave={()=>setRoute('admin_dashboard')} />}
-      {(route === 'portfolio' || route === 'admin_login') && (
-        <>
-           <PortfolioLanding isDarkMode={isDarkMode} toggleTheme={()=>setIsDarkMode(!isDarkMode)} onLoginClick={()=>setRoute('admin_login')} />
-           {route === 'admin_login' && <AdminLogin isDarkMode={isDarkMode} onCancel={()=>setRoute('portfolio')} onLogin={()=>setRoute('admin_dashboard')} />}
-        </>
-      )}
-    </>
-  );
+  if (route === 'viewer') return isUnlocked ? <MemoryView data={memoryData} isDarkMode={isDarkMode} /> : <PasswordWall memoryData={memoryData} correctPassword={memoryData.password} senderName={memoryData.senderName} onUnlock={()=>setIsUnlocked(true)} isDarkMode={isDarkMode} />;
+  return ( <> {route === 'admin_dashboard' && <AdminDashboard isDarkMode={isDarkMode} onLogOut={()=>setRoute('portfolio')} onCreateNew={()=>{setEditingMemory(null); setRoute('admin_editor');}} onEdit={(mem) => { setEditingMemory(mem); setRoute('admin_editor'); }} />} {route === 'admin_editor' && <MemoryEditor isDarkMode={isDarkMode} initialData={editingMemory} onCancel={()=>setRoute('admin_dashboard')} onSave={()=>setRoute('admin_dashboard')} />} {(route === 'portfolio' || route === 'admin_login') && ( <> <PortfolioLanding isDarkMode={isDarkMode} toggleTheme={()=>setIsDarkMode(!isDarkMode)} onLoginClick={()=>setRoute('admin_login')} /> {route === 'admin_login' && <AdminLogin isDarkMode={isDarkMode} onCancel={()=>setRoute('portfolio')} onLogin={()=>setRoute('admin_dashboard')} />} </> )} </> );
 };
 
 export default App;
