@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>صالة الألعاب - SecretPage 🎮</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;700;900&family=Cairo:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Firebase SDKs (ES Modules for standard compatibility) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        // إعدادات فايربيز الخاصة بك
+        const firebaseConfig = {
+            apiKey: "AIzaSyAxgxawMWe6gRc6PZEj4qGsY21VrLW7CAQ",
+            authDomain: "secret-72655.firebaseapp.com",
+            projectId: "secret-72655",
+            storageBucket: "secret-72655.firebasestorage.app",
+            messagingSenderId: "720937094156",
+            appId: "1:720937094156:web:8d8d8be4384f147f317229"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        window.db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // إنشاء أو استرجاع Device ID فريد لكل جهاز
+        let localDeviceId = localStorage.getItem('secret_games_device_id');
+        if (!localDeviceId) {
+            localDeviceId = 'dev_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+            localStorage.setItem('secret_games_device_id', localDeviceId);
+        }
+        window.deviceId = localDeviceId;
+
+        window.memoryData = null;
+        window.memoryId = new URLSearchParams(window.location.search).get('id');
+
+        // جعل دوال الفايربيز متاحة عالمياً
+        window.firebaseDoc = doc;
+        window.firebaseGetDoc = getDoc;
+        window.firebaseSetDoc = setDoc;
+        window.firebaseUpdateDoc = updateDoc;
+        window.firebaseOnSnapshot = onSnapshot;
+
+        async function init() {
+            if (!window.memoryId) {
+                showError("عفواً، لم يتم العثور على رابط صالح.");
+                return;
+            }
+
+            try {
+                // انتظار نجاح تسجيل الدخول المجهول قبل أي قراءة من الداتا بيز
+                await signInAnonymously(auth);
+                
+                const docRef = doc(window.db, "memories", window.memoryId);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.allowGames && !data.isArchived) {
+                        window.memoryData = data; 
+                        initializeAppUI(data);
+                    } else {
+                        showError("عفواً، صالة الألعاب غير مفعلة لهذه الصفحة.");
+                    }
+                } else {
+                    showError("عفواً، هذه الصفحة غير موجودة.");
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                showError("حدث خطأ أثناء الاتصال بالسيرفر. يرجى التأكد من اتصالك بالإنترنت وتحديث الصفحة.");
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('loading-screen').classList.add('hidden');
+            const errorScreen = document.getElementById('error-screen');
+            errorScreen.classList.remove('hidden');
+            document.getElementById('error-message').innerText = message;
+        }
+
+        function initializeAppUI(data) {
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+            
+            const accentColor = data.themeColors?.accent || '#eab308';
+            document.documentElement.style.setProperty('--accent-color', accentColor);
+        }
+
+        // بدء التهيئة عند اكتمال تحميل الـ DOM
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            init();
+        });
+    </script>
+
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #050511; color: #fff; }
+        .font-alexandria { font-family: 'Alexandria', sans-serif; }
+        
+        .bg-pattern {
+            background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+        }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+
+        @keyframes float-fast {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-5px) scale(1.05); }
+        }
+        .animate-float-fast { animation: float-fast 2s ease-in-out infinite; }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px var(--accent-color, #eab308); }
+            50% { box-shadow: 0 0 30px var(--accent-color, #eab308); }
+        }
+        .animate-pulse-glow { animation: pulse-glow 2s infinite; }
+        
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .animate-pop { animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        @keyframes popIn { 
+            0% { opacity: 0; transform: scale(0.8) translateY(20px); } 
+            70% { opacity: 1; transform: scale(1.05) translateY(-5px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); } 
+        }
+
+        .animate-slide-up { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+
+        @keyframes bounce-rotate {
+            0%, 100% { transform: translateY(0) rotate(-5deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
+        }
+        .animate-bounce-rotate { animation: bounce-rotate 3s ease-in-out infinite; }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+
+        /* Custom Radio Buttons */
+        .gender-radio:checked + div {
+            border-color: currentColor;
+            background-color: rgba(255,255,255,0.1);
+            transform: scale(1.05);
+            box-shadow: inset 0 0 15px rgba(255,255,255,0.1);
+        }
+
+        /* Question Card Style */
+        .question-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.4) 100%);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            border-left: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Input Focus Glow */
+        .input-glow:focus {
+            box-shadow: 0 0 20px var(--focus-color, rgba(255,255,255,0.2));
+        }
+    </style>
+</head>
+<body class="min-h-screen relative overflow-x-hidden">
+
+    <div class="fixed inset-0 z-[-1] bg-[#050511] overflow-hidden">
+        <div class="absolute inset-0 bg-pattern opacity-20"></div>
+        <div class="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-yellow-500/20 blur-[100px] animate-float" style="animation-duration: 8s;"></div>
+        <div class="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-purple-600/20 blur-[120px] animate-float" style="animation-duration: 12s;"></div>
+        
+        <!-- Floating Emojis Background -->
+        <div id="bg-emojis" class="absolute inset-0 pointer-events-none opacity-10 flex items-center justify-center text-4xl z-0"></div>
+    </div>
+
+    <div id="loading-screen" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#050511]">
+        <i data-lucide="dices" class="w-16 h-16 text-yellow-500 animate-spin mb-4"></i>
+        <h2 class="text-2xl font-bold font-alexandria animate-pulse">جاري تجهيز صالة الألعاب...</h2>
+    </div>
+
+    <div id="error-screen" class="fixed inset-0 z-[100] hidden flex flex-col items-center justify-center bg-[#050511] p-4 text-center">
+        <div class="w-24 h-24 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(239,68,68,0.3)]">
+            <i data-lucide="shield-alert" class="w-12 h-12"></i>
+        </div>
+        <h2 class="text-3xl font-black font-alexandria mb-4 text-white">غير مصرح بالدخول</h2>
+        <p id="error-message" class="text-gray-400 max-w-md leading-relaxed"></p>
+        <button onclick="window.close()" class="mt-8 px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold transition-colors">إغلاق النافذة</button>
+    </div>
+
+    <div id="main-content" class="hidden relative z-10 flex flex-col min-h-screen">
+        <header class="p-6 flex justify-between items-center glass-card border-x-0 border-t-0 sticky top-0 z-50">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-yellow-500/20 text-yellow-500 rounded-xl animate-pulse-glow">
+                    <i data-lucide="gamepad-2" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black font-alexandria text-white tracking-wide">صالة الألعاب</h1>
+                    <p class="text-[10px] text-gray-400 uppercase tracking-widest mt-0.5">Secret Arcade 🕹️</p>
+                </div>
+            </div>
+            <button onclick="window.close()" class="p-2 bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-gray-300 rounded-full transition-colors" title="إغلاق الألعاب والعودة">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </header>
+
+        <main class="flex-1 p-6 max-w-5xl mx-auto w-full pb-20">
+            <div class="text-center mb-12 mt-4 animate-slide-up">
+                <h2 class="text-3xl md:text-4xl font-black font-alexandria mb-4">اختار اللعبة اللي هتلعبوها! 🎲</h2>
+                <p class="text-gray-400 text-sm max-w-lg mx-auto">ألعاب مصممة مخصوص عشان تقربكم من بعض وتعمل ذكريات جديدة.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- كارت لعبة عاجنك وخابزك -->
+                <div class="glass-card rounded-[2rem] p-6 relative overflow-hidden group hover:-translate-y-2 transition-all duration-300 hover:shadow-[0_15px_40px_rgba(234,179,8,0.2)] border-yellow-500/30 animate-pop">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-[40px] group-hover:bg-yellow-500/20 transition-colors"></div>
+                    <div class="flex items-start justify-between mb-6 relative z-10">
+                        <div class="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 text-white rounded-2xl flex items-center justify-center shadow-lg transform group-hover:rotate-12 transition-transform">
+                            <i data-lucide="users" class="w-8 h-8"></i>
+                        </div>
+                        <span class="px-3 py-1 bg-yellow-500/20 text-yellow-400 text-[10px] font-black rounded-full border border-yellow-500/30 animate-pulse">جاهزة للعب 🎮</span>
+                    </div>
+                    <div class="relative z-10">
+                        <h3 class="text-2xl font-black font-alexandria mb-2 text-white">عاجنك وخابزك 🧠</h3>
+                        <p class="text-sm text-gray-400 leading-relaxed mb-6 h-10">لعبة أسئلة بتختبر مين فيكم عارف التاني أكتر! مين هيجاوب أسرع وأصح؟ (تحتاج الجهازين)</p>
+                        <button onclick="openGame('game-ajnek')" class="w-full py-4 bg-yellow-500 hover:bg-yellow-400 text-black rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg transition-colors active:scale-95 group-hover:scale-[1.02]">
+                            <i data-lucide="play" class="w-5 h-5 fill-current"></i> دخول اللعبة
+                        </button>
+                    </div>
+                </div>
+
+                <!-- كارت مكان للعبة القادمة -->
+                <div class="glass-card rounded-[2rem] p-6 relative overflow-hidden opacity-60 border-dashed border-white/20 flex flex-col items-center justify-center min-h-[280px] animate-pop" style="animation-delay: 100ms;">
+                    <i data-lucide="lock" class="w-12 h-12 text-gray-500 mb-4"></i>
+                    <h3 class="text-xl font-bold font-alexandria text-gray-400 mb-2">لعبة قريباً...</h3>
+                    <p class="text-xs text-gray-500">جاري تجهيز ألعاب جديدة ممتعة!</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- حاوية الألعاب -->
+    <div id="game-container" class="fixed inset-0 z-[200] hidden bg-[#050511] flex flex-col">
+        <header class="p-4 flex justify-between items-center bg-black/40 backdrop-blur-md border-b border-white/10 shrink-0 z-50 relative">
+            <h2 id="current-game-title" class="text-lg font-bold font-alexandria text-white flex items-center gap-2"></h2>
+            <button onclick="closeGame()" class="p-2 bg-white/10 hover:bg-red-500/20 text-white hover:text-red-400 rounded-full transition-colors" title="إغلاق اللعبة">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </header>
+
+        <div id="game-area" class="flex-1 relative overflow-y-auto no-scrollbar pb-10 flex flex-col z-10">
+            <!-- سيتم حقن واجهة اللعبة هنا -->
+        </div>
+    </div>
+
+    <script>
+        // مستمع (Listener) لحالة اللعبة الأونلاين
+        let gameUnsubscribe = null;
+
+        // دالة لتحديث الإيموجي في الخلفية حسب المرحلة
+        function updateBgEmojis(emojisArr) {
+            const bgContainer = document.getElementById('bg-emojis');
+            if(!bgContainer || !emojisArr) return;
+            
+            bgContainer.innerHTML = '';
+            const numEmojis = 6;
+            for(let i=0; i<numEmojis; i++) {
+                const el = document.createElement('div');
+                el.innerText = emojisArr[Math.floor(Math.random() * emojisArr.length)];
+                el.className = 'absolute animate-float opacity-30 text-5xl';
+                el.style.left = `${10 + Math.random() * 80}%`;
+                el.style.top = `${10 + Math.random() * 80}%`;
+                el.style.animationDelay = `${Math.random() * 2}s`;
+                el.style.animationDuration = `${4 + Math.random() * 4}s`;
+                bgContainer.appendChild(el);
+            }
+        }
+
+        function openGame(gameId) {
+            document.getElementById('main-content').classList.add('hidden');
+            const container = document.getElementById('game-container');
+            container.classList.remove('hidden');
+            container.classList.add('flex');
+            
+            const titleEl = document.getElementById('current-game-title');
+            const areaEl = document.getElementById('game-area');
+
+            if (gameId === 'game-ajnek') {
+                titleEl.innerHTML = '<i data-lucide="users" class="w-5 h-5 text-yellow-500"></i> عاجنك وخابزك';
+                initAjnekOnlineGame(areaEl);
+            }
+            lucide.createIcons();
+        }
+
+        async function closeGame() {
+            if(confirm("هل أنت متأكد أنك تريد الخروج؟ إذا كنت في منتصف اللعبة سيتم إنهائها للطرف الآخر أيضاً.")) {
+                
+                if(gameUnsubscribe) {
+                    gameUnsubscribe();
+                    gameUnsubscribe = null;
+                }
+
+                if (window.db && window.memoryId) {
+                    try {
+                        const roomRef = window.firebaseDoc(window.db, "game_rooms", `${window.memoryId}_ajnek`);
+                        await window.firebaseUpdateDoc(roomRef, { status: 'closed' });
+                    } catch(e) {}
+                }
+
+                document.getElementById('game-container').classList.add('hidden');
+                document.getElementById('game-container').classList.remove('flex');
+                document.getElementById('main-content').classList.remove('hidden');
+                document.getElementById('game-area').innerHTML = '';
+                document.getElementById('bg-emojis').innerHTML = '';
+            }
+        }
+
+        // =========================================================================
+        // === منطق لعبة: عاجنك وخابزك (Online Multiplayer) ===
+        // =========================================================================
+        function initAjnekOnlineGame(container) {
+            const memoryId = window.memoryId;
+            const db = window.db;
+            const myDeviceId = window.deviceId;
+            
+            const roomRef = window.firebaseDoc(db, "game_rooms", `${memoryId}_ajnek`);
+
+            // قائمة الأسئلة المحسنة مع إيموجيز لكل سؤال
+            const questions = [
+                { id: 1, selfQ: "إيه هو لونك المفضل؟ 🎨", guessQ: "إيه هو لون [name] المفضل؟ 🎨", emoji: '🎨' },
+                { id: 2, selfQ: "أكتر أكلة بتحبها جداً؟ 🍕", guessQ: "إيه هي أكتر أكلة [name] [v_love_ha] جداً؟ 🍕", emoji: '🍔' },
+                { id: 3, selfQ: "تاريخ ميلادك إمتى؟ (يوم وشهر) 🎂", guessQ: "تاريخ ميلاد [name] إمتى؟ 🎂", emoji: '🎉' },
+                { id: 4, selfQ: "إيه أكتر حاجة بتعصبك؟ 😤", guessQ: "إيه أكتر حاجة بتعصب [name]؟ 😤", emoji: '😠' },
+                { id: 5, selfQ: "أكتر اسم دلع بتحب تتنادى بيه؟ 🥰", guessQ: "أكتر اسم دلع [name] [v_love_ho]؟ 🥰", emoji: '💖' },
+                { id: 6, selfQ: "لو هتسافر مكان واحد في العالم، تختار فين؟ ✈️", guessQ: "لو [name] [v_travel] مكان واحد في العالم، [v_choose] فين؟ ✈️", emoji: '🌍' },
+                { id: 7, selfQ: "إيه هو مشروبك المفضل؟ ☕", guessQ: "إيه هو مشروب [name] المفضل؟ ☕", emoji: '🧋' },
+                { id: 8, selfQ: "أكتر فيلم أو مسلسل بتحبه؟ 🎬", guessQ: "أكتر فيلم أو مسلسل [name] [v_love_ho]؟ 🎬", emoji: '🍿' },
+                { id: 9, selfQ: "مقاس حذائك (كوتشي) كام؟ 👟", guessQ: "مقاس حذاء [name] كام؟ 👟", emoji: '👞' },
+                { id: 10, selfQ: "إيه هي أكبر مخاوفك (فوبيا)؟ 👻", guessQ: "إيه هي أكبر فوبيا/خوف عند [name]؟ 👻", emoji: '🕷️' }
+            ];
+
+            let myPlayerNum = null; // 1 or 2
+            let roomState = null;
+            
+            // 🌟 الشاشة الافتتاحية التفاعلية للعبة 🌟
+            function showSplashIntro() {
+                updateBgEmojis(['👨‍🍳', '👩‍🍳', '🥖', '🥨', '🥐', '🧠', '🤔', '✨']);
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center min-h-[80vh] p-4 md:p-8 max-w-lg mx-auto animate-slide-up w-full">
+                        
+                        <div class="relative w-40 h-40 mb-6 flex items-center justify-center group">
+                            <div class="absolute inset-0 bg-gradient-to-br from-yellow-400 to-orange-500 blur-2xl rounded-full animate-pulse-glow opacity-50"></div>
+                            <div class="text-7xl absolute animate-bounce-rotate z-10 drop-shadow-2xl">🧠</div>
+                            <div class="text-5xl absolute -right-4 top-2 animate-float drop-shadow-xl" style="animation-delay: 0.5s;">🥖</div>
+                            <div class="text-5xl absolute -left-4 bottom-2 animate-float drop-shadow-xl" style="animation-delay: 1s;">👩‍❤️‍👨</div>
+                        </div>
+                        
+                        <h2 class="text-4xl md:text-5xl font-black font-alexandria text-white mb-8 drop-shadow-[0_0_20px_rgba(234,179,8,0.6)] text-center tracking-wide">
+                            عاجنك وخابزك
+                        </h2>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded-[2rem] p-6 md:p-8 mb-10 w-full shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden backdrop-blur-xl">
+                            <div class="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500"></div>
+                            
+                            <h4 class="text-yellow-400 font-black text-xl mb-6 text-center border-b border-white/5 pb-4 flex items-center justify-center gap-2">
+                                <i data-lucide="scroll-text" class="w-6 h-6"></i> إزاي نلعب؟
+                            </h4>
+                            
+                            <div class="space-y-5 text-right">
+                                <p class="text-gray-200 text-sm md:text-base flex items-start gap-3 leading-relaxed">
+                                    <span class="p-1.5 bg-white/10 rounded-xl text-yellow-400 shrink-0 shadow-inner"><i data-lucide="edit-3" class="w-4 h-4"></i></span> 
+                                    كل واحد فيكم هيجاوب على ١٠ أسئلة عن نفسه سراً في البداية.
+                                </p>
+                                <p class="text-gray-200 text-sm md:text-base flex items-start gap-3 leading-relaxed">
+                                    <span class="p-1.5 bg-white/10 rounded-xl text-yellow-400 shrink-0 shadow-inner"><i data-lucide="brain" class="w-4 h-4"></i></span> 
+                                    بعد كده، هتبدأوا تخمنوا إجابات بعض في نفس اللحظة!
+                                </p>
+                                <p class="text-gray-200 text-sm md:text-base flex items-start gap-3 leading-relaxed">
+                                    <span class="p-1.5 bg-white/10 rounded-xl text-yellow-400 shrink-0 shadow-inner"><i data-lucide="award" class="w-4 h-4"></i></span> 
+                                    اللي هيجمع نقط أكتر ومطابقة لتفكير التاني.. يبقى هو اللي عاجنه وخابزه 😉
+                                </p>
+                            </div>
+                        </div>
+
+                        <button id="yalla-bina-btn" class="w-full py-5 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black rounded-[1.5rem] font-black text-2xl transition-transform active:scale-95 shadow-[0_15px_40px_rgba(245,158,11,0.4)] flex items-center justify-center gap-3 group">
+                            يلا بينا <i data-lucide="rocket" class="w-7 h-7 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>
+                        </button>
+                    </div>
+                `;
+                lucide.createIcons();
+
+                document.getElementById('yalla-bina-btn').onclick = () => {
+                    // الانتقال لشاشة التحميل وبدء الدخول للغرفة
+                    container.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full p-6 text-center animate-fade-in flex-1">
+                            <i data-lucide="loader-2" class="w-16 h-16 text-yellow-500 animate-spin mb-4 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]"></i>
+                            <h3 class="text-2xl font-bold font-alexandria text-white tracking-wider">جاري إنشاء الغرفة السحرية... ✨</h3>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                    joinRoom();
+                };
+            }
+
+            // الدخول للغرفة (تم استدعاؤها بعد الافتتاحية)
+            async function joinRoom() {
+                try {
+                    const docSnap = await window.firebaseGetDoc(roomRef);
+                    
+                    if (!docSnap.exists() || docSnap.data().status === 'closed') {
+                        myPlayerNum = 1;
+                        await window.firebaseSetDoc(roomRef, {
+                            status: 'waiting', 
+                            p1: { id: myDeviceId, name: window.memoryData?.recipientName || '', gender: '', ready: false, answers: {}, guesses: {}, score: 0 },
+                            p2: { id: null, name: window.memoryData?.senderName || '', gender: '', ready: false, answers: {}, guesses: {}, score: 0 },
+                            currentQ: 0,
+                            lastAction: Date.now()
+                        });
+                    } else {
+                        const data = docSnap.data();
+                        if (data.p1.id === myDeviceId) {
+                            myPlayerNum = 1;
+                        } else if (data.p2.id === myDeviceId) {
+                            myPlayerNum = 2;
+                        } else if (!data.p2.id) {
+                            myPlayerNum = 2;
+                            await window.firebaseUpdateDoc(roomRef, {
+                                'p2.id': myDeviceId,
+                                status: 'waiting'
+                            });
+                        } else {
+                            alert("الغرفة ممتلئة حالياً.");
+                            closeGame();
+                            return;
+                        }
+                    }
+                    
+                    listenToRoom();
+
+                } catch (e) {
+                    console.error("Join Room Error:", e);
+                    alert("خطأ في الاتصال بالسيرفر. تأكد من إعدادات الـ Rules في Firebase.");
+                    closeGame();
+                }
+            }
+
+            function listenToRoom() {
+                gameUnsubscribe = window.firebaseOnSnapshot(roomRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        roomState = docSnap.data();
+                        if(roomState.status === 'closed') {
+                            alert("تم إغلاق اللعبة من الطرف الآخر.");
+                            closeGame();
+                            return;
+                        }
+                        renderState();
+                    }
+                });
+            }
+
+            function formatQuestion(qText, targetName, targetGender) {
+                let txt = qText.replace(/\[name\]/g, `<span class="text-[var(--guess-theme)] underline decoration-wavy decoration-[var(--guess-theme)] underline-offset-4">${targetName}</span>`);
+                
+                if (targetGender === 'boy') {
+                    txt = txt.replace(/\[v_love_ha\]/g, 'بيحبها')
+                             .replace(/\[v_love_ho\]/g, 'بيحبه')
+                             .replace(/\[v_travel\]/g, 'هيسافر')
+                             .replace(/\[v_choose\]/g, 'هيختار');
+                } else {
+                    txt = txt.replace(/\[v_love_ha\]/g, 'بتحبها')
+                             .replace(/\[v_love_ho\]/g, 'بتحبه')
+                             .replace(/\[v_travel\]/g, 'هتسافر')
+                             .replace(/\[v_choose\]/g, 'هتختار');
+                }
+                return txt;
+            }
+
+            function normalizeArabic(text) {
+                if (!text) return "";
+                return text.trim().toLowerCase()
+                    .replace(/[أإآ]/g, 'ا')
+                    .replace(/ة/g, 'ه')
+                    .replace(/ى/g, 'ي')
+                    .replace(/[^ا-ي0-9a-z]/g, ''); 
+            }
+
+            function isMatch(ans1, ans2) {
+                const norm1 = normalizeArabic(ans1);
+                const norm2 = normalizeArabic(ans2);
+                if (norm1 === norm2) return true;
+                if (norm1.length > 2 && norm2.length > 2) {
+                    if (norm1.includes(norm2) || norm2.includes(norm1)) return true;
+                }
+                return false;
+            }
+
+            // تحديث الواجهة بناءً على حالة السيرفر
+            function renderState() {
+                if (!roomState) return;
+
+                const me = myPlayerNum === 1 ? roomState.p1 : roomState.p2;
+                const other = myPlayerNum === 1 ? roomState.p2 : roomState.p1;
+
+                container.innerHTML = '';
+
+                // 1. شاشة الانتظار
+                if (roomState.status === 'waiting') {
+                    updateBgEmojis(['👋', '👀', '🎮', '✨', '⏳']);
+                    const isOtherReady = other.ready;
+
+                    container.innerHTML = `
+                        <div class="flex flex-col items-center justify-center min-h-[80vh] p-4 md:p-8 max-w-lg mx-auto animate-pop w-full">
+                            <div class="text-center mb-8 relative">
+                                <div class="absolute -inset-4 bg-yellow-500/20 blur-xl rounded-full"></div>
+                                <div class="w-24 h-24 bg-gradient-to-br from-yellow-400 to-orange-500 text-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-[0_10px_30px_rgba(245,158,11,0.4)] relative z-10">
+                                    <i data-lucide="globe" class="w-12 h-12 animate-pulse"></i>
+                                </div>
+                                <h3 class="text-4xl font-black font-alexandria mb-2 text-white drop-shadow-md relative z-10">غرفة اللعب</h3>
+                                <p class="text-gray-300 text-sm relative z-10">ظبط بياناتك واضغط جاهز عشان تبدأوا!</p>
+                            </div>
+                            
+                            <div class="w-full question-card p-6 rounded-[2rem] shadow-2xl mb-8 relative overflow-hidden">
+                                <div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl"></div>
+                                <div class="mb-6 relative z-10">
+                                    <label class="text-xs font-bold opacity-70 mb-2 block text-yellow-400">اسمك إيه؟</label>
+                                    <input id="my-name" type="text" value="${me.name}" class="w-full bg-black/50 border border-white/10 p-4 rounded-xl text-center font-bold text-white outline-none focus:border-yellow-500 transition shadow-inner text-lg" placeholder="اكتب اسمك..." ${me.ready ? 'disabled' : ''} />
+                                </div>
+                                
+                                <div class="flex gap-4 mb-6 relative z-10">
+                                    <label class="flex-1 cursor-pointer relative text-blue-400 group">
+                                        <input type="radio" name="my_gender" value="boy" class="peer hidden gender-radio" ${me.gender === 'boy' ? 'checked' : ''} ${me.ready ? 'disabled' : ''} onchange="window.updateLocalGender('boy')">
+                                        <div class="p-4 text-center border-2 border-white/10 rounded-2xl transition-all peer-hover:border-blue-400/50 flex flex-col items-center gap-2 bg-black/20 group-active:scale-95">
+                                            <span class="text-4xl group-hover:animate-bounce">👦🏻</span>
+                                            <span class="text-sm font-bold">ولد</span>
+                                        </div>
+                                    </label>
+                                    <label class="flex-1 cursor-pointer relative text-pink-400 group">
+                                        <input type="radio" name="my_gender" value="girl" class="peer hidden gender-radio" ${me.gender === 'girl' ? 'checked' : ''} ${me.ready ? 'disabled' : ''} onchange="window.updateLocalGender('girl')">
+                                        <div class="p-4 text-center border-2 border-white/10 rounded-2xl transition-all peer-hover:border-pink-400/50 flex flex-col items-center gap-2 bg-black/20 group-active:scale-95">
+                                            <span class="text-4xl group-hover:animate-bounce">👩🏻</span>
+                                            <span class="text-sm font-bold">بنت</span>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                ${me.ready ? 
+                                    `<div class="w-full py-4 bg-green-500/20 border border-green-500/50 text-green-400 rounded-2xl font-bold flex justify-center items-center gap-2 shadow-[inset_0_0_20px_rgba(34,197,94,0.2)] animate-pulse"><i data-lucide="check-circle" class="w-6 h-6"></i> جاهز وفي انتظار ${other.id ? 'الطرف التاني...' : 'دخول الطرف التاني...'}</div>` 
+                                    : 
+                                    `<button id="ready-btn" class="w-full py-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black rounded-2xl font-black text-xl transition-transform active:scale-95 shadow-[0_10px_30px_rgba(245,158,11,0.4)] flex justify-center items-center gap-2"><i data-lucide="zap" class="w-6 h-6"></i> أنا جاهز!</button>`
+                                }
+                            </div>
+
+                            <!-- حالة الطرف التاني -->
+                            <div class="w-full glass-card p-4 rounded-2xl flex items-center justify-between shadow-lg">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center border border-white/10 text-2xl shadow-inner">
+                                        ${!other.id ? '⏳' : (other.gender==='boy'?'👦🏻':other.gender==='girl'?'👩🏻':'👤')}
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-white text-base">${!other.id ? 'الطرف التاني' : (other.name || 'مجهول')}</p>
+                                        <p class="text-xs ${other.ready ? 'text-green-400 font-bold' : 'text-gray-400'}">${!other.id ? 'لسه مدخلش الغرفة...' : other.ready ? 'جاهز للعب!' : 'بيجهز نفسه...'}</p>
+                                    </div>
+                                </div>
+                                <div class="bg-black/40 p-2 rounded-full">
+                                    ${other.ready ? '<i data-lucide="check-circle" class="text-green-400 w-6 h-6"></i>' : '<i data-lucide="loader-2" class="text-gray-500 w-6 h-6 animate-spin"></i>'}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    let currentSelectedGender = me.gender;
+                    window.updateLocalGender = (gender) => {
+                        currentSelectedGender = gender;
+                    };
+
+                    if (!me.ready) {
+                        document.getElementById('ready-btn').onclick = async () => {
+                            const name = document.getElementById('my-name').value.trim();
+                            if(!name || !currentSelectedGender) return alert('لازم تكتب اسمك وتختار نوعك!');
+                            
+                            const updateObj = {
+                                [`p${myPlayerNum}.name`]: name,
+                                [`p${myPlayerNum}.gender`]: currentSelectedGender,
+                                [`p${myPlayerNum}.ready`]: true
+                            };
+
+                            if (other.ready) {
+                                updateObj.status = 'playing_self';
+                            }
+
+                            try {
+                                await window.firebaseUpdateDoc(roomRef, updateObj);
+                            } catch (e) {
+                                console.error(e);
+                                alert("حدث خطأ أثناء إرسال البيانات.");
+                            }
+                        };
+                    }
+                }
+
+                // 2. مرحلة الإجابة عن النفس 
+                else if (roomState.status === 'playing_self') {
+                    const qIndex = roomState.currentQ;
+                    const q = questions[qIndex];
+                    const progress = (qIndex / questions.length) * 100;
+                    
+                    updateBgEmojis(['🤫', '✍️', '💭', '📝', q.emoji]);
+
+                    const myAns = me.answers[q.id];
+                    const otherAns = other.answers[q.id];
+
+                    if (!myAns) {
+                        // شاشة الإدخال
+                        document.documentElement.style.setProperty('--focus-color', 'rgba(59,130,246,0.4)');
+                        container.innerHTML = `
+                            <div class="max-w-lg mx-auto p-4 md:p-6 pt-8 w-full animate-pop flex-1 flex flex-col">
+                                <div class="mb-8 shrink-0 bg-black/40 p-4 rounded-2xl border border-white/5 backdrop-blur-md">
+                                    <div class="flex justify-between items-center text-sm font-bold mb-3 text-gray-300">
+                                        <span class="flex items-center gap-2"><span class="text-2xl animate-bounce-rotate">🤫</span> <span class="text-blue-400">إجاباتك السرية</span></span>
+                                        <span class="bg-white/10 px-4 py-1.5 rounded-full font-mono text-white shadow-inner">${qIndex + 1} / 10</span>
+                                    </div>
+                                    <div class="w-full bg-black/60 rounded-full h-2.5 overflow-hidden border border-white/5 shadow-inner">
+                                        <div class="bg-gradient-to-r from-blue-600 to-blue-400 h-full rounded-full transition-all duration-500 shadow-[0_0_15px_rgba(59,130,246,0.8)] relative" style="width: ${progress}%">
+                                            <div class="absolute inset-0 bg-white/20 w-full h-full" style="animation: shimmer 2s infinite linear;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="question-card p-8 md:p-10 rounded-[2.5rem] text-center mb-8 relative flex-1 flex flex-col justify-center items-center">
+                                    <div class="absolute -top-10 left-1/2 -translate-x-1/2 text-6xl drop-shadow-2xl animate-float">${q.emoji}</div>
+                                    <h2 class="text-2xl md:text-3xl font-black font-alexandria text-white leading-relaxed mb-10 drop-shadow-md mt-4">${q.selfQ}</h2>
+                                    <div class="w-full relative">
+                                        <input type="text" id="ans-input" class="input-glow w-full bg-black/60 border-2 border-white/10 focus:border-blue-500 p-5 md:p-6 rounded-2xl text-center font-bold text-xl text-white outline-none transition shadow-inner" placeholder="إجابتك بصراحة..." autocomplete="off" />
+                                    </div>
+                                </div>
+
+                                <button id="submit-ans" class="w-full py-5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-2xl font-black text-xl transition-all active:scale-95 shadow-[0_15px_40px_rgba(59,130,246,0.4)] shrink-0 flex justify-center items-center gap-2 hover:-translate-y-1">
+                                    تأكيد وإرسال سراً <i data-lucide="lock" class="w-6 h-6"></i>
+                                </button>
+                            </div>
+                        `;
+                        
+                        setTimeout(() => document.getElementById('ans-input')?.focus(), 300);
+
+                        document.getElementById('submit-ans').onclick = async () => {
+                            const val = document.getElementById('ans-input').value.trim();
+                            if(!val) return;
+                            
+                            const updateObj = {
+                                [`p${myPlayerNum}.answers.${q.id}`]: val
+                            };
+
+                            if (otherAns) {
+                                if (qIndex < questions.length - 1) {
+                                    updateObj.currentQ = qIndex + 1;
+                                } else {
+                                    updateObj.status = 'playing_guess';
+                                    updateObj.currentQ = 0;
+                                }
+                            }
+                            
+                            try {
+                                await window.firebaseUpdateDoc(roomRef, updateObj);
+                            } catch(e) { console.error(e); }
+                        };
+                        
+                        document.getElementById('ans-input').addEventListener('keypress', function(e) {
+                            if (e.key === 'Enter') document.getElementById('submit-ans').click();
+                        });
+
+                    } else {
+                        // شاشة الانتظار
+                        updateBgEmojis(['⏳', '☕', '👀', '📱']);
+                        container.innerHTML = `
+                            <div class="flex flex-col items-center justify-center min-h-[80vh] p-6 text-center animate-fade-in">
+                                <div class="w-24 h-24 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mb-8 border border-green-500/30 shadow-[0_0_40px_rgba(34,197,94,0.3)] relative">
+                                    <div class="absolute inset-0 bg-green-500/10 rounded-full animate-ping"></div>
+                                    <i data-lucide="check" class="w-12 h-12 relative z-10"></i>
+                                </div>
+                                <h3 class="text-3xl font-black font-alexandria text-white mb-4 drop-shadow-md">إجابتك في الحفظ والصون 🔒</h3>
+                                <div class="bg-black/30 p-4 rounded-xl border border-white/10 flex items-center gap-3">
+                                    <i data-lucide="loader-2" class="w-5 h-5 text-yellow-500 animate-spin"></i>
+                                    <p class="text-gray-300 font-bold">مستنيين <span class="text-yellow-400">${other.name}</span> يخلص...</p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+
+                // 3. مرحلة التخمين 
+                else if (roomState.status === 'playing_guess') {
+                    const qIndex = roomState.currentQ;
+                    const q = questions[qIndex];
+                    const progress = (qIndex / questions.length) * 100;
+                    
+                    updateBgEmojis(['🤔', '🧠', '🎯', '👀', q.emoji]);
+
+                    const myGuess = me.guesses[q.id];
+                    const otherGuess = other.guesses[q.id];
+
+                    if (!myGuess) {
+                        const displayQ = formatQuestion(q.guessQ, other.name, other.gender);
+                        const themeColor = 'purple-500';
+                        document.documentElement.style.setProperty('--guess-theme', '#a855f7');
+                        document.documentElement.style.setProperty('--focus-color', 'rgba(168,85,247,0.4)');
+
+                        container.innerHTML = `
+                            <div class="max-w-lg mx-auto p-4 md:p-6 pt-8 w-full animate-pop flex-1 flex flex-col">
+                                <div class="mb-8 shrink-0 bg-black/40 p-4 rounded-2xl border border-white/5 backdrop-blur-md">
+                                    <div class="flex justify-between items-center text-sm font-bold mb-3 text-gray-300">
+                                        <span class="flex items-center gap-2"><span class="text-2xl animate-pulse">🤔</span> <span class="text-purple-400">وقت التخمين!</span></span>
+                                        <span class="bg-white/10 px-4 py-1.5 rounded-full font-mono text-white shadow-inner">${qIndex + 1} / 10</span>
+                                    </div>
+                                    <div class="w-full bg-black/60 rounded-full h-2.5 overflow-hidden border border-white/5 shadow-inner">
+                                        <div class="bg-gradient-to-r from-purple-600 to-purple-400 h-full rounded-full transition-all duration-500 shadow-[0_0_15px_rgba(168,85,247,0.8)] relative" style="width: ${progress}%">
+                                             <div class="absolute inset-0 bg-white/20 w-full h-full" style="animation: shimmer 2s infinite linear;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="question-card p-8 md:p-10 rounded-[2.5rem] border-t border-l border-purple-500/30 text-center shadow-[0_25px_50px_rgba(0,0,0,0.6)] mb-8 relative flex-1 flex flex-col justify-center items-center">
+                                    <div class="absolute -top-10 left-1/2 -translate-x-1/2 w-20 h-20 bg-[#1a1a2e] rounded-full border-4 border-purple-500 flex items-center justify-center shadow-[0_0_30px_rgba(168,85,247,0.5)]">
+                                        <i data-lucide="brain" class="w-10 h-10 text-purple-400 animate-pulse"></i>
+                                    </div>
+                                    <h2 class="text-2xl md:text-3xl font-black font-alexandria leading-relaxed mb-10 drop-shadow-md text-white mt-6">${displayQ}</h2>
+                                    <div class="w-full relative">
+                                        <input type="text" id="guess-input" class="input-glow w-full bg-black/60 border-2 border-white/10 focus:border-white p-5 md:p-6 rounded-2xl text-center font-bold text-xl text-white outline-none transition shadow-inner" placeholder="يا ترى هيجاوب يقول إيه؟..." autocomplete="off" />
+                                    </div>
+                                </div>
+
+                                <button id="submit-guess" class="w-full py-5 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white rounded-2xl font-black text-xl transition-transform active:scale-95 shadow-[0_15px_40px_rgba(168,85,247,0.4)] shrink-0 flex justify-center items-center gap-3 hover:-translate-y-1">
+                                    <i data-lucide="scan-eye" class="w-6 h-6"></i> اكشف النتيجة!
+                                </button>
+                            </div>
+                        `;
+
+                        setTimeout(() => document.getElementById('guess-input')?.focus(), 300);
+
+                        document.getElementById('submit-guess').onclick = async () => {
+                            const val = document.getElementById('guess-input').value.trim();
+                            if(!val) return;
+                            
+                            const realOtherAns = other.answers[q.id];
+                            const match = isMatch(val, realOtherAns);
+                            const newScore = me.score + (match ? 1 : 0);
+
+                            const updateObj = {
+                                [`p${myPlayerNum}.guesses.${q.id}`]: val,
+                                [`p${myPlayerNum}.score`]: newScore
+                            };
+
+                            if (otherGuess) {
+                                if (qIndex < questions.length - 1) {
+                                    updateObj.currentQ = qIndex + 1;
+                                } else {
+                                    updateObj.status = 'finished';
+                                }
+                            }
+                            
+                            try {
+                                await window.firebaseUpdateDoc(roomRef, updateObj);
+                                
+                                // إظهار الريأكشن
+                                showFeedback(match, val, realOtherAns, other.name, () => {});
+                            } catch(e) { console.error(e); }
+                        };
+                        
+                        document.getElementById('guess-input').addEventListener('keypress', function(e) {
+                            if (e.key === 'Enter') document.getElementById('submit-guess').click();
+                        });
+
+                    } else {
+                        // شاشة انتظار التخمين
+                        updateBgEmojis(['⏳', '😬', '👀', '⁉️']);
+                        container.innerHTML = `
+                            <div class="flex flex-col items-center justify-center min-h-[80vh] p-6 text-center animate-fade-in">
+                                <div class="w-24 h-24 bg-purple-500/20 text-purple-400 rounded-full flex items-center justify-center mb-8 border border-purple-500/30 shadow-[0_0_40px_rgba(168,85,247,0.3)] relative">
+                                    <div class="absolute inset-0 bg-purple-500/10 rounded-full animate-ping"></div>
+                                    <i data-lucide="eye" class="w-12 h-12 relative z-10 animate-pulse"></i>
+                                </div>
+                                <h3 class="text-3xl font-black font-alexandria text-white mb-4 drop-shadow-md">في انتظار ${other.name}...</h3>
+                                <div class="bg-black/30 p-4 rounded-xl border border-white/10 flex items-center justify-center gap-3 w-full max-w-xs mx-auto">
+                                    <i data-lucide="loader-2" class="w-5 h-5 text-yellow-500 animate-spin"></i>
+                                    <p class="text-gray-300 font-bold">بيفكر في إجابته...</p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+
+                // 4. النتيجة النهائية
+                else if (roomState.status === 'finished') {
+                    updateBgEmojis(['🏆', '🎉', '🎊', '✨', '❤️', '🔥']);
+                    const p1Percent = Math.round((roomState.p1.score / questions.length) * 100);
+                    const p2Percent = Math.round((roomState.p2.score / questions.length) * 100);
+                    
+                    let winnerText = "";
+                    let winDesc = "";
+                    let winnerColor = "";
+
+                    if (p1Percent > p2Percent) {
+                        winnerText = `🏆 ${roomState.p1.name} الفائز!`;
+                        winDesc = `<span class="text-blue-400 font-bold">${roomState.p1.name}</span> طلع عاجن <span class="text-purple-400 font-bold">${roomState.p2.name}</span> وخابزه أكتر! 🎉`;
+                        winnerColor = "from-blue-600 to-blue-400";
+                    } else if (p2Percent > p1Percent) {
+                        winnerText = `🏆 ${roomState.p2.name} الفائز!`;
+                        winDesc = `<span class="text-purple-400 font-bold">${roomState.p2.name}</span> طلعت عاجنة <span class="text-blue-400 font-bold">${roomState.p1.name}</span> وخابزاه أكتر! 🎉`;
+                        winnerColor = "from-purple-600 to-pink-500";
+                    } else {
+                        winnerText = "🤝 تعادل أسطوري!";
+                        winDesc = "انتو الاتنين فاهمين بعض صح وحافظين بعض! ❤️";
+                        winnerColor = "from-yellow-500 to-orange-500";
+                    }
+
+                    let tableHTML = `<div class="space-y-6 mt-12 w-full">`;
+                    questions.forEach(q => {
+                        const p1Real = roomState.p1.answers[q.id] || '-';
+                        const p2Real = roomState.p2.answers[q.id] || '-';
+                        const p1Guess = roomState.p1.guesses[q.id] || '-';
+                        const p2Guess = roomState.p2.guesses[q.id] || '-';
+                        
+                        const p1Match = isMatch(p1Guess, p2Real);
+                        const p2Match = isMatch(p2Guess, p1Real);
+
+                        tableHTML += `
+                            <div class="question-card rounded-[2rem] p-6 text-right relative overflow-hidden hover:-translate-y-1 transition-transform">
+                                <div class="absolute top-0 right-0 w-16 h-16 bg-white/5 rounded-full blur-xl"></div>
+                                <h5 class="text-base md:text-lg font-bold text-white mb-5 border-b border-white/10 pb-3 pl-2 flex items-center gap-2">
+                                    <span class="text-2xl">${q.emoji}</span> ${q.selfQ}
+                                </h5>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-sm">
+                                    <!-- تقييم اللاعب الأول -->
+                                    <div class="bg-black/50 p-5 rounded-2xl border-l-4 ${p1Match ? 'border-l-green-500 shadow-[inset_0_0_20px_rgba(34,197,94,0.05)]' : 'border-l-red-500 shadow-[inset_0_0_20px_rgba(239,68,68,0.05)]'} relative">
+                                        <div class="absolute top-3 left-3 text-2xl">${p1Match ? '✅' : '❌'}</div>
+                                        <div class="text-gray-400 mb-3 text-xs font-bold"><span class="text-blue-400">${roomState.p1.name}</span> خمن:</div>
+                                        <div class="font-bold text-white text-lg mb-2">"${p1Guess}"</div>
+                                        <div class="opacity-70 text-xs bg-white/5 p-2.5 rounded-xl mt-3 flex items-center gap-2">
+                                            <i data-lucide="info" class="w-4 h-4"></i> الحقيقة: <span class="font-bold text-white">"${p2Real}"</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- تقييم اللاعب الثاني -->
+                                    <div class="bg-black/50 p-5 rounded-2xl border-l-4 ${p2Match ? 'border-l-green-500 shadow-[inset_0_0_20px_rgba(34,197,94,0.05)]' : 'border-l-red-500 shadow-[inset_0_0_20px_rgba(239,68,68,0.05)]'} relative">
+                                        <div class="absolute top-3 left-3 text-2xl">${p2Match ? '✅' : '❌'}</div>
+                                        <div class="text-gray-400 mb-3 text-xs font-bold"><span class="text-purple-400">${roomState.p2.name}</span> خمن:</div>
+                                        <div class="font-bold text-white text-lg mb-2">"${p2Guess}"</div>
+                                        <div class="opacity-70 text-xs bg-white/5 p-2.5 rounded-xl mt-3 flex items-center gap-2">
+                                            <i data-lucide="info" class="w-4 h-4"></i> الحقيقة: <span class="font-bold text-white">"${p1Real}"</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    tableHTML += `</div>`;
+
+                    container.innerHTML = `
+                        <div class="max-w-4xl mx-auto p-4 md:p-8 animate-slide-up pb-24 w-full flex flex-col items-center">
+                            <!-- الهيرو سكشن للنتيجة -->
+                            <div class="w-full text-center mb-6 bg-gradient-to-b from-[#1a1a2e] to-black/60 p-8 md:p-12 rounded-[3rem] border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.7)] relative overflow-hidden">
+                                <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 mix-blend-overlay"></div>
+                                <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r ${winnerColor}"></div>
+                                
+                                <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br ${winnerColor} rounded-full mb-6 shadow-xl animate-bounce-slow">
+                                    <i data-lucide="trophy" class="w-10 h-10 text-white"></i>
+                                </div>
+                                
+                                <h2 class="text-4xl md:text-6xl font-black font-alexandria text-white mb-4 drop-shadow-2xl">${winnerText}</h2>
+                                <p class="text-gray-300 text-lg md:text-xl mb-10 max-w-md mx-auto leading-relaxed">${winDesc}</p>
+                                
+                                <div class="flex justify-center items-end gap-4 md:gap-12 mt-6 relative z-10">
+                                    <div class="text-center flex flex-col items-center">
+                                        <div class="w-24 h-24 md:w-32 md:h-32 rounded-full border-8 ${p1Percent > p2Percent ? 'border-yellow-400 shadow-[0_0_40px_rgba(250,204,21,0.6)] scale-110 z-20' : 'border-blue-500/30'} flex items-center justify-center text-3xl md:text-4xl font-black text-white bg-black/90 mb-4 transition-transform backdrop-blur-sm">
+                                            ${p1Percent}%
+                                        </div>
+                                        <span class="font-black text-xl text-blue-400 bg-blue-500/10 px-4 py-1 rounded-full border border-blue-500/20">${roomState.p1.name}</span>
+                                    </div>
+                                    
+                                    <div class="text-5xl opacity-20 font-black italic pb-12">VS</div>
+                                    
+                                    <div class="text-center flex flex-col items-center">
+                                        <div class="w-24 h-24 md:w-32 md:h-32 rounded-full border-8 ${p2Percent > p1Percent ? 'border-yellow-400 shadow-[0_0_40px_rgba(250,204,21,0.6)] scale-110 z-20' : 'border-purple-500/30'} flex items-center justify-center text-3xl md:text-4xl font-black text-white bg-black/90 mb-4 transition-transform backdrop-blur-sm">
+                                            ${p2Percent}%
+                                        </div>
+                                        <span class="font-black text-xl text-purple-400 bg-purple-500/10 px-4 py-1 rounded-full border border-purple-500/20">${roomState.p2.name}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="w-full flex items-center gap-4 mb-2 mt-8">
+                                <div class="h-px bg-white/10 flex-1"></div>
+                                <h3 class="text-2xl font-black font-alexandria text-white flex items-center gap-3"><i data-lucide="file-search" class="text-yellow-500 w-6 h-6"></i> المراجعة النهائية</h3>
+                                <div class="h-px bg-white/10 flex-1"></div>
+                            </div>
+                            
+                            ${tableHTML}
+                            
+                            <div class="mt-16 w-full max-w-md flex flex-col gap-4">
+                                <button id="restart-btn" class="w-full py-5 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black rounded-2xl font-black text-xl transition-transform active:scale-95 shadow-[0_15px_40px_rgba(245,158,11,0.4)] flex items-center justify-center gap-3 hover:-translate-y-1">
+                                    <i data-lucide="rotate-ccw" class="w-6 h-6"></i> نلعب جولة تانية؟
+                                </button>
+                                <button onclick="closeGame()" class="w-full py-5 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-bold text-lg transition-colors border border-white/10 flex items-center justify-center gap-3">
+                                    <i data-lucide="log-out" class="w-5 h-5 opacity-70"></i> خروج لصالة الألعاب
+                                </button>
+                            </div>
+                        </div>
+                    `;
+
+                    document.getElementById('restart-btn').onclick = async () => {
+                        try {
+                            await window.firebaseUpdateDoc(roomRef, {
+                                status: 'waiting',
+                                'p1.ready': false,
+                                'p2.ready': false,
+                                'p1.answers': {}, 'p1.guesses': {}, 'p1.score': 0,
+                                'p2.answers': {}, 'p2.guesses': {}, 'p2.score': 0,
+                                currentQ: 0
+                            });
+                        } catch(e) { console.error(e); }
+                    };
+                }
+
+                lucide.createIcons();
+            }
+
+            // دالة عرض الريأكشن الفوري 
+            function showFeedback(isMatch, guess, real, targetName, callback) {
+                const overlay = document.createElement('div');
+                overlay.className = `fixed inset-0 z-[300] flex items-center justify-center p-4 backdrop-blur-2xl transition-all duration-300 bg-black/90`;
+                
+                const bgColor = isMatch ? 'bg-gradient-to-br from-green-400 to-green-600' : 'bg-gradient-to-br from-red-500 to-rose-600';
+                const shadowColor = isMatch ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)';
+                const icon = isMatch ? 'check-circle' : 'x-octagon';
+                const title = isMatch ? 'عاش! إجابة صحيحة 🎯' : 'غلط للأسف 💔';
+                const border = isMatch ? 'border-green-500/50' : 'border-red-500/50';
+                
+                overlay.innerHTML = `
+                    <div class="w-full max-w-sm bg-[#0a0a14] border-2 ${border} rounded-[2.5rem] p-8 text-center shadow-[0_20px_50px_rgba(0,0,0,0.8)] animate-pop transform scale-100 relative overflow-hidden">
+                        <div class="absolute inset-0 ${bgColor} opacity-10 pointer-events-none"></div>
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl"></div>
+                        
+                        <div class="w-28 h-28 mx-auto rounded-full ${bgColor} text-white flex items-center justify-center mb-8 shadow-[0_0_50px_${shadowColor}] relative z-10 border-4 border-[#0a0a14]">
+                            <i data-lucide="${icon}" class="w-14 h-14"></i>
+                        </div>
+                        <h3 class="text-3xl font-black font-alexandria text-white mb-8 relative z-10 drop-shadow-md">${title}</h3>
+                        
+                        <div class="space-y-4 text-sm text-right bg-black/60 p-6 rounded-3xl border border-white/10 mb-10 relative z-10 shadow-inner">
+                            <div>
+                                <span class="opacity-50 block text-[10px] uppercase tracking-widest mb-2 font-bold">إجابتك (تخمينك):</span>
+                                <span class="font-black text-white text-xl block bg-white/5 p-3 rounded-xl border border-white/5 line-through decoration-red-500/50 decoration-2">${guess}</span>
+                            </div>
+                            <div class="pt-2">
+                                <span class="opacity-50 block text-[10px] uppercase tracking-widest mb-2 font-bold">إجابة <span class="text-purple-400">${targetName}</span> الحقيقية:</span>
+                                <span class="font-black ${isMatch ? 'text-green-400' : 'text-red-400'} text-xl block bg-${isMatch ? 'green' : 'red'}-500/10 p-3 rounded-xl border border-${isMatch ? 'green' : 'red'}-500/20">${real}</span>
+                            </div>
+                        </div>
+                        <button id="close-feedback" class="w-full py-5 bg-white hover:bg-gray-200 text-black rounded-2xl font-black text-xl transition-transform active:scale-95 shadow-xl relative z-10 flex items-center justify-center gap-2">
+                            كمل اللعب <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                `;
+                
+                // تعديل مظهر الإجابة لو كانت صح عشان ميبقاش عليها خط
+                if(isMatch) {
+                    const guessSpan = overlay.querySelector('span.line-through');
+                    if(guessSpan) guessSpan.classList.remove('line-through', 'decoration-red-500/50');
+                }
+
+                document.body.appendChild(overlay);
+                lucide.createIcons();
+                
+                // إضافة مؤثرات صوتية بسيطة باستخدام AudioContext
+                try { 
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) {
+                        const ctx = new AudioContext();
+                        const osc = ctx.createOscillator();
+                        const gainNode = ctx.createGain();
+                        
+                        osc.connect(gainNode);
+                        gainNode.connect(ctx.destination);
+                        
+                        if(isMatch) {
+                            osc.type = 'sine';
+                            osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                            osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); // E5
+                            osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2); // G5
+                            gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                            gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                            osc.start(ctx.currentTime);
+                            osc.stop(ctx.currentTime + 0.5);
+                        } else {
+                            osc.type = 'sawtooth';
+                            osc.frequency.setValueAtTime(300, ctx.currentTime);
+                            osc.frequency.linearRampToValueAtTime(150, ctx.currentTime + 0.3);
+                            gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                            gainNode.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                            osc.start(ctx.currentTime);
+                            osc.stop(ctx.currentTime + 0.3);
+                        }
+                    }
+                } catch(e){}
+
+                document.getElementById('close-feedback').onclick = () => {
+                    overlay.classList.add('opacity-0');
+                    overlay.querySelector('div').classList.add('scale-90');
+                    setTimeout(() => {
+                        overlay.remove();
+                        callback();
+                    }, 300);
+                };
+            }
+
+            // ابدأ بعرض الافتتاحية بدلاً من الانضمام فوراً للغرفة
+            showSplashIntro();
+        }
+    </script>
+</body>
+</html>
