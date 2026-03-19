@@ -6,8 +6,9 @@ import {
 } from 'firebase/firestore'; 
 import {
   getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword,
-  setPersistence, inMemoryPersistence
+  setPersistence, inMemoryPersistence, RecaptchaVerifier, signInWithPhoneNumber
 } from 'firebase/auth';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 import { 
   Heart, Music, Image as ImageIcon, Calendar, Lock, X, Play, Pause, SkipForward, SkipBack, ListMusic,
   Sparkles, Link as LinkIcon, Trash2, Plus, Users, Eye, Copy, LayoutDashboard, LogOut,
@@ -43,8 +44,19 @@ const getOptimizedUrl = (url, isVideo = false) => {
 // Initialize Firebase
 let db;
 let auth;
+let appCheck;
+
 try {
   const app = initializeApp(firebaseConfig);
+  
+  // تفعيل ميزة التحقق من التطبيق (App Check) باستخدام مفتاح reCAPTCHA
+  if (typeof window !== 'undefined') {
+    appCheck = initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider('6LdNhIssAAAAAGfrlyJhg297c4YLw8Z4r8cFo-gV'),
+      isTokenAutoRefreshEnabled: true
+    });
+  }
+
   db = getFirestore(app);
   auth = getAuth(app);
 } catch (error) {
@@ -173,9 +185,12 @@ const AnimatedCounter = ({ end, duration = 2000, suffix = "" }) => {
             if (!startTimestamp) startTimestamp = timestamp;
             const progress = Math.min((timestamp - startTimestamp) / duration, 1);
             const easeOut = 1 - Math.pow(1 - progress, 4);
-            setCount(Math.floor(easeOut * end));
+            const finalCount = Math.floor(easeOut * end);
+            setCount(finalCount);
             if (progress < 1) {
                 window.requestAnimationFrame(step);
+            } else {
+                setCount(end); // Ensure exact final number
             }
         };
         window.requestAnimationFrame(step);
@@ -332,7 +347,7 @@ const AutoPlayVideo = ({ src, className }) => {
 const ScrollReveal = ({ children, delay = 0, className = '' }) => {
     const [isVisible, setIsVisible] = useState(false);
     const ref = useRef(null);
-  
+    
     useEffect(() => {
       const observer = new IntersectionObserver(
         ([entry]) => {
@@ -346,7 +361,7 @@ const ScrollReveal = ({ children, delay = 0, className = '' }) => {
       if (ref.current) observer.observe(ref.current);
       return () => { if (ref.current) observer.unobserve(ref.current); };
     }, []);
-  
+    
     return (
       <div
         ref={ref}
@@ -464,10 +479,10 @@ const LeadFormModal = ({ isOpen, onClose, isDarkMode }) => {
 };
 
 // --- PORTFOLIO ---
-const PortfolioLanding = ({ onLoginClick, isDarkMode, toggleTheme }) => {
+const PortfolioLanding = ({ isDarkMode, toggleTheme }) => {
   const [activeTab, setActiveTab] = useState('home'); 
   const [showcase, setShowcase] = useState([]);
-  const [secretClickCount, setSecretClickCount] = useState(0);
+  const [isLoadingShowcase, setIsLoadingShowcase] = useState(true);
   const [bgType, setBgType] = useState('portfolio-mixed');
   const [showLeadForm, setShowLeadForm] = useState(false);
   
@@ -477,37 +492,13 @@ const PortfolioLanding = ({ onLoginClick, isDarkMode, toggleTheme }) => {
   const cycleBg = () => setBgType(bgOptions[(bgOptions.indexOf(bgType) + 1) % bgOptions.length]);
 
   useEffect(() => {
-    let unsubscribe;
-    
-    const fetchPortfolioAndStats = async () => {
-      if (!db) return;
-      try {
-          const q = query(collection(db, "memories"));
-          const querySnapshot = await getDocs(q);
-          const allMemories = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => !item.isArchived);
-          
-          setShowcase(allMemories.filter(item => item.showInPortfolio));
-          
-          const realCount = allMemories.length;
-          const baseDate = new Date('2024-01-01').getTime();
-          const now = new Date().getTime();
-          const daysPassed = Math.floor((now - baseDate) / (1000 * 60 * 60 * 24));
-          
-          const dynamicClients = 2500 + (daysPassed * 3);
-          const dynamicVisits = 145000 + (daysPassed * 120); 
-          const dynamicMemories = 4200 + (daysPassed * 4);
-
-          setPublicStats({
-              clients: dynamicClients + realCount,
-              visits: dynamicVisits + (realCount * 85),
-              memories: dynamicMemories + realCount
-          });
-      } catch (error) { console.error("Error fetching portfolio:", error); }
-    };
+    let unsubscribeAuth;
+    let unsubscribeSnapshot;
 
     if (auth) {
-        unsubscribe = onAuthStateChanged(auth, async (user) => {
+        unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
             if (user) {
+                // تسجيل الزيارة مرة واحدة في الجلسة
                 if (!sessionStorage.getItem('visited_main') && db) {
                     sessionStorage.setItem('visited_main', 'true');
                     try {
@@ -519,18 +510,46 @@ const PortfolioLanding = ({ onLoginClick, isDarkMode, toggleTheme }) => {
                         });
                     } catch (e) { console.error('Visit tracking error', e); }
                 }
-                fetchPortfolioAndStats();
+                
+                // جلب الأعمال والإحصائيات بشكل لحظي (Real-time)
+                if (db) {
+                    const q = query(collection(db, "memories"));
+                    unsubscribeSnapshot = onSnapshot(q, (querySnapshot) => {
+                        const allMemories = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => !item.isArchived);
+                        
+                        setShowcase(allMemories.filter(item => item.showInPortfolio));
+                        
+                        // --- كود الزيادة التلقائية اليومية ---
+                        const realCount = allMemories.length;
+                        const baseDate = new Date('2024-01-01').getTime(); // تاريخ البداية المرجعي
+                        const now = new Date().getTime();
+                        const daysPassed = Math.floor((now - baseDate) / (1000 * 60 * 60 * 24)); // حساب عدد الأيام التي مرت
+                        
+                        // يمكنك تعديل معدل الزيادة اليومي التلقائي من هنا (الرقم المضروب في daysPassed)
+                        const dynamicClients = 2500 + (daysPassed * 12);     // زيادة 12 عميل كل يوم
+                        const dynamicVisits = 145000 + (daysPassed * 450);   // زيادة 450 زيارة كل يوم
+                        const dynamicMemories = 4200 + (daysPassed * 15);    // زيادة 15 ذكرى كل يوم
+
+                        setPublicStats({
+                            clients: dynamicClients + realCount,
+                            visits: dynamicVisits + (realCount * 85),
+                            memories: dynamicMemories + realCount
+                        });
+                        setIsLoadingShowcase(false);
+                    }, (error) => {
+                        console.error("Error fetching portfolio:", error);
+                        setIsLoadingShowcase(false);
+                    });
+                }
             }
         });
     }
       
-    return () => unsubscribe && unsubscribe();
+    return () => {
+        if (unsubscribeAuth) unsubscribeAuth();
+        if (unsubscribeSnapshot) unsubscribeSnapshot();
+    };
   }, []);
-
-  const handleSecretClick = () => {
-      setSecretClickCount(prev => prev + 1);
-      if (secretClickCount + 1 >= 5) { onLoginClick(); setSecretClickCount(0); }
-  };
 
   const NavButton = ({ active, onClick, icon: Icon, label, highlight }) => (
     <button onClick={onClick} className={`flex flex-col items-center gap-1.5 transition-all duration-300 ${active ? '-translate-y-1' : 'opacity-50 hover:opacity-100'}`}>
@@ -663,12 +682,17 @@ const PortfolioLanding = ({ onLoginClick, isDarkMode, toggleTheme }) => {
                             </div>
                         </ScrollReveal>
                     ))}
-                    {showcase.length === 0 && (
+                    {isLoadingShowcase ? (
+                        <div className="col-span-full text-center py-20 glass-card rounded-[2rem]">
+                            <Loader2 size={48} className="mx-auto mb-4 opacity-60 animate-spin text-indigo-400" />
+                            <p className="opacity-60 font-bold">جاري تحميل الأعمال...</p>
+                        </div>
+                    ) : showcase.length === 0 ? (
                         <div className="col-span-full text-center py-20 glass-card rounded-[2rem]">
                             <ImageIcon size={48} className="mx-auto mb-4 opacity-20" />
                             <p className="opacity-50 font-bold">لا توجد أعمال معروضة حالياً.</p>
                         </div>
-                    )}
+                    ) : null}
                 </div>
             </div>
          )}
@@ -752,7 +776,53 @@ const PortfolioLanding = ({ onLoginClick, isDarkMode, toggleTheme }) => {
             </div>
          )}
          
-         <div className="text-center pt-8"><p onClick={handleSecretClick} className="text-[10px] opacity-20 cursor-default hover:opacity-50 transition font-mono tracking-widest">SECRET PAGE © 2026</p></div>
+         {/* فوتر الموقع ومعلومات التواصل (التصميم الجديد المزدوج) */}
+         <footer className="mt-20 border-t border-white/10 pt-16 pb-8 relative z-10">
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/10 pointer-events-none"></div>
+            <div className="max-w-5xl mx-auto px-6 flex flex-col md:flex-row items-center md:items-center justify-between gap-12 relative z-10">
+                
+                {/* قسم اللوجو (اليمين) */}
+                <div className="flex flex-col items-center md:items-start shrink-0">
+                    {/* مسار اللوجو: استبدل /company-logo.png بمسار الصورة الحقيقي لديك */}
+                    <div className="w-48 md:w-56 h-auto flex items-center justify-center">
+                        <img src="public\company-logo.png.png" alt="Company Logo" className="w-full h-auto object-contain drop-shadow-lg" onError={(e) => { e.target.onerror = null; e.target.src = 'https://cdn-icons-png.flaticon.com/512/833/833472.png'; }} />
+                    </div>
+                </div>
+
+                {/* قسم معلومات التواصل والسوشيال ميديا (اليسار) */}
+                <div className="flex flex-col items-center md:items-end gap-6 w-full">
+                    
+                    {/* رقم التواصل (مضبوط للاتجاه LTR وقابل للضغط للتحويل لواتساب) */}
+                    <a href="https://wa.me/201202789980" target="_blank" rel="noreferrer" className={`flex flex-row-reverse items-center justify-center gap-3 px-6 py-4 rounded-2xl border backdrop-blur-md transition-all duration-300 hover:scale-105 hover:shadow-lg w-full md:w-auto ${isDarkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-black/5 border-black/10 hover:bg-black/10'}`} title="تواصل معنا عبر واتساب">
+                        <span dir="ltr" className={`font-bold font-mono text-xl md:text-2xl tracking-widest ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>+20 120 278 9980</span>
+                        <div className="p-2 rounded-full bg-green-500/20 text-green-500"><MessageCircle size={24} /></div>
+                    </a>
+
+                    {/* أيقونات السوشيال ميديا والاتصال المباشر */}
+                    <div className="flex items-center gap-4">
+                        <a href="https://www.facebook.com/share/1B8DLwtF2g/" target="_blank" rel="noreferrer" className={`w-12 h-12 rounded-full flex items-center justify-center transition-all hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] ${isDarkMode ? 'bg-white/5 hover:bg-blue-600 text-gray-400 hover:text-white' : 'bg-black/5 hover:bg-blue-600 text-gray-600 hover:text-white'}`} title="فيسبوك">
+                            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+                        </a>
+                        <a href="https://www.instagram.com/art.club.agency?igsh=MTFrdG1mMTBjNDk2Mg==" target="_blank" rel="noreferrer" className={`w-12 h-12 rounded-full flex items-center justify-center transition-all hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(236,72,153,0.4)] ${isDarkMode ? 'bg-white/5 hover:bg-pink-600 text-gray-400 hover:text-white' : 'bg-black/5 hover:bg-pink-600 text-gray-600 hover:text-white'}`} title="إنستجرام">
+                            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                        </a>
+                        <a href="https://www.tiktok.com/@art.club.agency1?_r=1&_t=ZS-94nyBYDRsRu" target="_blank" rel="noreferrer" className={`w-12 h-12 rounded-full flex items-center justify-center transition-all hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(0,0,0,0.4)] ${isDarkMode ? 'bg-white/5 hover:bg-gray-800 text-gray-400 hover:text-white' : 'bg-black/5 hover:bg-gray-900 text-gray-600 hover:text-white'}`} title="تيك توك">
+                            {/* أيقونة تيك توك SVG مخصصة */}
+                            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5v3a8 8 0 0 1-5-3v5.5a4 4 0 0 1-4 4Z"></path></svg>
+                        </a>
+                        <a href="tel:+201202789980" className={`w-12 h-12 rounded-full flex items-center justify-center transition-all hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] ${isDarkMode ? 'bg-white/5 hover:bg-indigo-500 text-gray-400 hover:text-white' : 'bg-black/5 hover:bg-indigo-500 text-gray-600 hover:text-white'}`} title="اتصال هاتفي مباشر">
+                            <Phone size={22} />
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div className="mt-12 pt-6 border-t border-white/5 text-center">
+                <p className="text-[10px] opacity-30 font-mono tracking-widest uppercase">
+                    ALL RIGHTS RESERVED © 2026
+                </p>
+            </div>
+         </footer>
       </main>
 
       <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[95%] md:w-[600px] rounded-[2rem] p-2 backdrop-blur-2xl border shadow-2xl transition-colors ${isDarkMode ? 'bg-[#1a1a2e]/80 border-white/10 shadow-[0_10px_50px_rgba(0,0,0,0.5)]' : 'bg-white/80 border-gray-200 shadow-[0_10px_50px_rgba(0,0,0,0.1)]'}`}>
@@ -1640,13 +1710,13 @@ const MemoryEditor = ({ onCancel, onSave, isDarkMode, initialData, isClientMode 
 
   const handleSave = async () => {
     if (!isClientMode && (!formData.password || !formData.recipientName)) return alert("الاسم وباسورد المشاهدة مطلوبين!");
-    if (!db) return alert("Database error");
+    if (!db) return alert("عذراً، لا يوجد اتصال بقاعدة البيانات");
 
     setSaving(true);
     try {
         const targetId = existingMemoryId || initialData?.id || formData?.id;
         
-        const payload = { ...formData };
+        let payload = { ...formData };
         delete payload.id; 
         
         delete payload.songUrl;
@@ -1654,22 +1724,70 @@ const MemoryEditor = ({ onCancel, onSave, isDarkMode, initialData, isClientMode 
         delete payload.songImage;
         delete payload.songType;
 
+        // حماية البيانات الحية للمحادثات والإشعارات والمكالمات من التلف أو تجاوز الصلاحيات (أهم سبب لمشكلة الحفظ)
+        delete payload.chatMessages;
+        delete payload.chatPresence;
+        delete payload.pagePresence;
+        delete payload.rtcCall;
+        delete payload.createdAt; 
+
+        // تنظيف متقدم للحقول التي تحتوي على undefined والتي تسبب انهيار Firebase مباشرة
+        const cleanUndefined = (obj) => {
+            if (Array.isArray(obj)) return obj.map(cleanUndefined);
+            if (obj !== null && typeof obj === 'object') {
+                if (typeof obj.toDate === 'function' || (obj.seconds !== undefined && obj.nanoseconds !== undefined)) return obj;
+                const newObj = {};
+                Object.keys(obj).forEach(key => {
+                    if (obj[key] !== undefined) newObj[key] = cleanUndefined(obj[key]);
+                });
+                return newObj;
+            }
+            return obj;
+        };
+
+        payload = cleanUndefined(payload);
+
         if (isClientMode) {
             if (!targetId) {
                 alert("حدث خطأ تقني: تعذر العثور على معرف الصفحة. يرجى تحديث المتصفح والمحاولة.");
                 setSaving(false);
                 return;
             }
+            
+            // منع إرسال أي حقل إداري أو سري في طلب التعديل لتجنب رفض Firebase
             delete payload.isArchived;
             delete payload.showInPortfolio;
             delete payload.portfolioTitle;
             delete payload.allowChat; 
             delete payload.allowVoiceCall; 
             delete payload.allowAppInstall; 
-            delete payload.allowGames; // حماية الميزة من التعديل عبر العميل
+            delete payload.allowGames;
+            delete payload.loginTitle;
+            delete payload.loginButtonText;
+            delete payload.loginPlaceholder;
+            delete payload.loginDescription;
+            delete payload.loginIcon;
+            delete payload.loginImage;
+            delete payload.memoryTitle;
+            delete payload.loadingText;
             
-            await updateDoc(doc(db, "memories", targetId), { ...payload, updatedAt: serverTimestamp() });
-            alert("تم حفظ التعديلات بنجاح! ✨\nالرابط الخاص بك (والـ QR Code) سيظل كما هو ولن يتغير أبداً.");
+            try {
+                // المحاولة الأولى: حفظ التعديلات بما فيها الباسورد الجديد
+                await updateDoc(doc(db, "memories", targetId), { ...payload, updatedAt: serverTimestamp() });
+                alert("تم حفظ التعديلات وتغيير كلمة المرور بنجاح! ✨\nالرابط الخاص بك (والـ QR Code) سيظل كما هو ولن يتغير أبداً.");
+            } catch (err) {
+                // التعديل هنا: التعرف على خطأ الصلاحيات بدقة لتجنب توقف الحفظ
+                if (err?.code?.includes('permission-denied') || err?.message?.toLowerCase().includes('permission')) {
+                    const safePayload = { ...payload };
+                    delete safePayload.password;
+                    delete safePayload.editPassword;
+                    
+                    await updateDoc(doc(db, "memories", targetId), { ...safePayload, updatedAt: serverTimestamp() });
+                    alert("تم حفظ التعديلات بنجاح! ✨\n\n⚠️ تنبيه: لم يتم تغيير (كلمة المرور) لأن قواعد الحماية في سيرفر الموقع تمنع ذلك.");
+                } else {
+                    throw err; // أي خطأ آخر يتم تحويله للكاتش الرئيسي
+                }
+            }
         } else {
             if (targetId) {
                 await updateDoc(doc(db, "memories", targetId), { ...payload, updatedAt: serverTimestamp() });
@@ -1802,7 +1920,7 @@ const MemoryEditor = ({ onCancel, onSave, isDarkMode, initialData, isClientMode 
                     <CustomFileUpload label={formData.coverImage ? "تغيير الغلاف الحالي" : "اختر ملف الغلاف"} uploading={uploading && uploadState.type === 'cover'} progress={uploadState.progress} accept="image/*,video/*" onChange={e => handleImageUpload(e, 'cover')} icon={formData.coverType === 'video' ? VideoIcon : ImageIcon}/>
                     {formData.coverImage && (
                         <div className="relative mt-4 group w-full md:w-1/2 h-48 rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-white/10 mx-auto">
-                            {formData.coverType === 'video' ? <video src={formData.coverImage} className="h-full w-full object-cover" muted autoPlay loop /> : <img src={formData.coverImage} className="h-full w-full object-cover" alt="Cover"/>}
+                            {formData.coverType === 'video' ? <video src={formData.coverImage} className="h-full w-full object-cover" muted autoPlay loop playsInline /> : <img src={formData.coverImage} className="h-full w-full object-cover" alt="Cover"/>}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                             <div className="absolute top-3 right-3 bg-emerald-500/90 backdrop-blur px-2 py-1 rounded-lg text-[10px] font-bold text-white flex items-center gap-1"><CheckCircle size={12}/> تم الرفع</div>
                             <button onClick={(e)=>{e.preventDefault(); setFormData({...formData, coverImage:''})}} className="absolute bottom-3 right-3 p-2 bg-red-500/80 hover:bg-red-500 rounded-xl text-white transition backdrop-blur"><Trash2 size={16}/></button>
@@ -1999,7 +2117,7 @@ const MemoryEditor = ({ onCancel, onSave, isDarkMode, initialData, isClientMode 
                     </div>
                 </div>
 
-                                {/* 🔔 قسم إشعارات الحب التلقائية - متاح للإدمن فقط */}
+                {/* 🔔 قسم إشعارات الحب التلقائية - متاح للإدمن فقط */}
                 {!isClientMode && (
                     <div className="glass-panel p-6 md:p-8 rounded-[2.5rem] border border-cyan-500/20 relative overflow-hidden mt-6">
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500"></div>
@@ -3943,7 +4061,7 @@ const PasswordWall = ({ memoryData, onUnlock, isDarkMode }) => {
 
 const MusicPlayer = ({ playlist, isDarkMode }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [isPlaying, setIsPlaying] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(true);
     const [progress, setProgress] = useState(0);
     const audioRef = useRef(null);
     const ytPlayerRef = useRef(null);
@@ -4019,16 +4137,17 @@ const MusicPlayer = ({ playlist, isDarkMode }) => {
         if (ytLoaded && isYouTube && ytId) {
             if (ytPlayerRef.current && typeof ytPlayerRef.current.loadVideoById === 'function') {
                 ytPlayerRef.current.loadVideoById(ytId);
-                if(isPlaying) ytPlayerRef.current.playVideo();
+                ytPlayerRef.current.playVideo();
             } else if (!ytPlayerRef.current) {
                 ytPlayerRef.current = new window.YT.Player('yt-player-container', {
                     height: '0',
                     width: '0',
                     videoId: ytId,
-                    playerVars: { autoplay: isPlaying ? 1 : 0, controls: 0, playsinline: 1 },
+                    playerVars: { autoplay: 1, controls: 0, playsinline: 1 },
                     events: {
                         onReady: (e) => {
-                            if (isPlaying) e.target.playVideo();
+                            e.target.playVideo();
+                            setIsPlaying(true);
                         },
                         onStateChange: (e) => {
                             if (e.data === window.YT.PlayerState.PLAYING) setIsPlaying(true);
@@ -4052,29 +4171,17 @@ const MusicPlayer = ({ playlist, isDarkMode }) => {
     useEffect(() => {
         if (!isYouTube && audioRef.current && songUrl) {
             audioRef.current.load();
-            if (isPlaying) {
-                audioRef.current.play().catch(e => console.log("Play blocked", e));
+            const playPromise = audioRef.current.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    setIsPlaying(true);
+                }).catch(e => {
+                    console.log("Autoplay blocked", e);
+                    setIsPlaying(false);
+                });
             }
         }
     }, [songUrl, isYouTube, currentIndex]);
-
-    useEffect(() => {
-        const attemptPlay = async () => {
-            if (!isYouTube && audioRef.current && songUrl) {
-                try { 
-                    await audioRef.current.play(); 
-                    setIsPlaying(true); 
-                } catch (e) { 
-                    console.log("Autoplay blocked by browser"); 
-                }
-            } else if (isYouTube && ytPlayerRef.current && typeof ytPlayerRef.current.playVideo === 'function') {
-                ytPlayerRef.current.playVideo();
-                setIsPlaying(true);
-            }
-        };
-        const timer = setTimeout(attemptPlay, 1000); 
-        return () => clearTimeout(timer);
-    }, []); 
 
     const togglePlay = () => {
         if (isYouTube && ytPlayerRef.current) {
@@ -4170,7 +4277,7 @@ const MusicPlayer = ({ playlist, isDarkMode }) => {
                 </div>
             </div>
             
-            {isYouTube ? <div id="yt-player-container" className="hidden"></div> : <audio ref={audioRef} src={songUrl} onEnded={() => { if(playlist.length > 1) handleNext(); else { audioRef.current.currentTime=0; audioRef.current.play();} }} onTimeUpdate={handleTimeUpdate}/>}
+            {isYouTube ? <div id="yt-player-container" className="hidden"></div> : <audio ref={audioRef} autoPlay src={songUrl} onEnded={() => { if(playlist.length > 1) handleNext(); else { audioRef.current.currentTime=0; audioRef.current.play();} }} onTimeUpdate={handleTimeUpdate}/>}
             <style>{`@keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } } .animate-marquee { animation: marquee 10s linear infinite; }`}</style>
         </div>
     );
@@ -4981,8 +5088,24 @@ const MemoryView = ({ data, isDarkMode, onEditClick, onQuizComplete }) => {
 const App = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const initialId = urlParams.get('id');
+  const adminParam = urlParams.get('admin');
+  
+  // حماية الكلمة السرية (بدلاً من كتابة secret2026 تم تشفيرها بأرقام الكاركتر ASCII)
+  // s=115, e=101, c=99, r=114, e=101, t=116, 2=50, 0=48, 2=50, 6=54
+  const secretCodes = [115, 101, 99, 114, 101, 116, 50, 48, 50, 54];
+  const isUserAdmin = useMemo(() => {
+      if (!adminParam || adminParam.length !== secretCodes.length) return false;
+      for (let i = 0; i < secretCodes.length; i++) {
+          if (adminParam.charCodeAt(i) !== secretCodes[i]) return false;
+      }
+      return true;
+  }, [adminParam]);
 
-  const [route, setRoute] = useState(initialId ? 'loading' : 'portfolio'); 
+  const [route, setRoute] = useState(() => {
+      if (initialId) return 'loading';
+      if (isUserAdmin) return 'admin_login';
+      return 'portfolio';
+  }); 
   const [memoryId, setMemoryId] = useState(initialId);
   const [memoryData, setMemoryData] = useState(null);
   const [editingMemory, setEditingMemory] = useState(null); 
@@ -5038,41 +5161,123 @@ const App = () => {
     } 
   };
   
-  const AdminLogin = ({ onCancel, onLogin }) => { 
-      const [email, setEmail] = useState('admin@secretpage.com');
-      const [pass, setPass] = useState(''); 
-      const [loading, setLoading] = useState(false);
+  const AdminLogin = ({ onCancel, onLogin, isDarkMode }) => { 
+      const ADMIN_EMAIL = 'admin@secretpage.com';
+      const ADMIN_PHONE = '+201202789980'; 
 
-      const handleLogin = async (e) => {
+      const [email, setEmail] = useState(ADMIN_EMAIL);
+      const [pass, setPass] = useState(''); 
+      const [otp, setOtp] = useState('');
+      const [step, setStep] = useState(1); 
+      const [loading, setLoading] = useState(false);
+      const [confirmationResult, setConfirmationResult] = useState(null);
+
+      // تنظيف reCAPTCHA عند إغلاق النافذة لتجنب أي أخطاء متعلقة بحذف العنصر
+      useEffect(() => {
+          return () => {
+              if (window.recaptchaVerifier) {
+                  try {
+                      window.recaptchaVerifier.clear();
+                  } catch (e) {}
+                  window.recaptchaVerifier = null;
+              }
+          };
+      }, []);
+
+      const setupRecaptcha = () => {
+          if (!window.recaptchaVerifier) {
+              window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                  'size': 'invisible',
+                  'callback': (response) => {}
+              });
+          }
+      };
+
+      const handleLoginStep1 = async (e) => {
           e.preventDefault();
           setLoading(true);
           try {
-              await signInWithEmailAndPassword(auth, email, pass);
-              onLogin();
+              if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+                  throw new Error('unauthorized_email');
+              }
+
+              // 1. الدخول بالإيميل
+              const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+              
+              if (userCredential.user.email !== ADMIN_EMAIL) {
+                  await auth.signOut();
+                  throw new Error('unauthorized_user');
+              }
+
+              // 2. إرسال SMS
+              setupRecaptcha();
+              const appVerifier = window.recaptchaVerifier;
+              const confirmation = await signInWithPhoneNumber(auth, ADMIN_PHONE, appVerifier);
+              
+              setConfirmationResult(confirmation);
+              setStep(2);
+
           } catch (error) {
-              console.error(error);
-              alert('بيانات الدخول غير صحيحة، أو لم تقم بإنشاء الحساب في فايربيز بعد.');
+              console.error("Login Error Details:", error);
+              let errorMsg = 'بيانات الدخول غير صحيحة.';
+              if (error.message === 'unauthorized_email' || error.message === 'unauthorized_user') errorMsg = 'عذراً، هذا الحساب غير مصرح له بدخول لوحة الإدارة.';
+              else if (error.code === 'auth/invalid-credential') errorMsg = 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+              else if (error.code === 'auth/user-not-found') errorMsg = 'هذا الحساب غير موجود في فايربيز.';
+              else if (error.code === 'auth/wrong-password') errorMsg = 'كلمة المرور خاطئة.';
+              else if (error.code === 'auth/too-many-requests') errorMsg = 'تم حظر الدخول مؤقتاً لمحاولات كثيرة خاطئة. جرب لاحقاً.';
+              else if (error.code === 'auth/operation-not-allowed') errorMsg = 'تنبيه هام: يجب الدخول إلى موقع Firebase ثم قسم Authentication ثم Sign-in method وتفعيل 3 أشياء: (Email/Password) و (Phone) و (Anonymous).';
+              else errorMsg = `خطأ من السيرفر: ${error.message}`;
+              alert(errorMsg);
+          }
+          setLoading(false);
+      };
+
+      const handleVerifyOTP = async (e) => {
+          e.preventDefault();
+          if (!otp) return;
+          setLoading(true);
+          try {
+              await confirmationResult.confirm(otp);
+              onLogin(); 
+          } catch (error) {
+              console.error("OTP Error:", error);
+              alert("رمز التحقق (OTP) غير صحيح أو انتهت صلاحيته.");
           }
           setLoading(false);
       };
 
       return ( 
           <div className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-xl ${isDarkMode ? 'bg-black/90' : 'bg-white/90'}`}> 
-              <form onSubmit={handleLogin} className={`glass-panel p-10 rounded-[2.5rem] w-full max-w-sm text-center relative shadow-2xl animate-modal-spring border-t border-indigo-500/30 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}> 
+              <div className={`glass-panel p-10 rounded-[2.5rem] w-full max-w-sm text-center relative shadow-2xl animate-modal-spring border-t border-indigo-500/30 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}> 
                   <button type="button" onClick={onCancel} className={`absolute top-6 right-6 p-2 rounded-full transition ${isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-black/5 hover:bg-black/10'}`}><X size={20}/></button> 
                   <div className="w-20 h-20 mx-auto bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/30">
                       <Shield size={32} />
                   </div>
                   <h2 className="text-2xl font-black mb-2 font-alexandria">لوحة التحكم 🛡️</h2> 
-                  <p className="text-sm opacity-60 mb-8">تسجيل الدخول للإدارة.</p>
+                  <p className="text-sm opacity-60 mb-8">{step === 1 ? 'تسجيل الدخول للإدارة.' : `أدخل الرمز المرسل إلى ${ADMIN_PHONE}`}</p>
                   
-                  <input type="email" required className={`w-full p-4 rounded-xl mb-4 outline-none focus:border-indigo-500 transition-colors ${isDarkMode ? 'bg-black/40 border border-white/10 text-white placeholder-gray-500' : 'bg-white border border-gray-300 text-gray-900 shadow-sm placeholder-gray-400'}`} value={email} onChange={e=>setEmail(e.target.value)} placeholder="البريد الإلكتروني"/> 
-                  <input type="password" required className={`w-full p-4 rounded-xl mb-8 outline-none focus:border-indigo-500 transition-colors text-center tracking-widest text-lg font-mono ${isDarkMode ? 'bg-black/40 border border-white/10 text-white placeholder-gray-500' : 'bg-white border border-gray-300 text-gray-900 shadow-sm placeholder-gray-400'}`} value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••"/> 
+                  {/* عنصر التحقق من الروبوت (نقلناه هنا ليظل ثابتاً ولا يختفي عند الانتقال للخطوة 2) */}
+                  <div id="recaptcha-container"></div>
                   
-                  <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white py-4 rounded-xl font-bold flex justify-center items-center gap-2 shadow-lg disabled:opacity-50 transition-all active:scale-95 text-lg">
-                      {loading ? <Loader2 size={24} className="animate-spin" /> : 'دخول آمن'}
-                  </button> 
-              </form> 
+                  {step === 1 ? (
+                      <form onSubmit={handleLoginStep1}>
+                          <input type="email" required className={`w-full p-4 rounded-xl mb-4 outline-none focus:border-indigo-500 transition-colors ${isDarkMode ? 'bg-black/40 border border-white/10 text-white placeholder-gray-500' : 'bg-white border border-gray-300 text-gray-900 shadow-sm placeholder-gray-400'}`} value={email} onChange={e=>setEmail(e.target.value)} placeholder="البريد الإلكتروني"/> 
+                          <input type="password" required className={`w-full p-4 rounded-xl mb-8 outline-none focus:border-indigo-500 transition-colors text-center tracking-widest text-lg font-mono ${isDarkMode ? 'bg-black/40 border border-white/10 text-white placeholder-gray-500' : 'bg-white border border-gray-300 text-gray-900 shadow-sm placeholder-gray-400'}`} value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••"/> 
+                          
+                          <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white py-4 rounded-xl font-bold flex justify-center items-center gap-2 shadow-lg disabled:opacity-50 transition-all active:scale-95 text-lg">
+                              {loading ? <Loader2 size={24} className="animate-spin" /> : 'دخول ومتابعة'}
+                          </button> 
+                      </form> 
+                  ) : (
+                      <form onSubmit={handleVerifyOTP}>
+                          <input type="text" required className={`w-full p-4 rounded-xl mb-8 outline-none focus:border-indigo-500 transition-colors text-center tracking-widest text-2xl font-mono ${isDarkMode ? 'bg-black/40 border border-white/10 text-white placeholder-gray-500' : 'bg-white border border-gray-300 text-gray-900 shadow-sm placeholder-gray-400'}`} value={otp} onChange={e=>setOtp(e.target.value)} placeholder="123456" autoFocus/> 
+                          
+                          <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white py-4 rounded-xl font-bold flex justify-center items-center gap-2 shadow-lg disabled:opacity-50 transition-all active:scale-95 text-lg">
+                              {loading ? <Loader2 size={24} className="animate-spin" /> : 'تأكيد الدخول الآمن'}
+                          </button> 
+                      </form>
+                  )}
+              </div> 
           </div> 
       ); 
   };
@@ -5162,11 +5367,13 @@ const App = () => {
               .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(156, 163, 175, 0.4); border-radius: 10px; }
               .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(156, 163, 175, 0.8); }
           `}</style>
+          
           {route === 'admin_dashboard' && <AdminDashboard isDarkMode={isDarkMode} onLogOut={()=>setRoute('portfolio')} onCreateNew={()=>{setEditingMemory(null); setRoute('admin_editor');}} onEdit={(mem) => { setEditingMemory(mem); setRoute('admin_editor'); }} />} 
           {route === 'admin_editor' && <MemoryEditor isDarkMode={isDarkMode} initialData={editingMemory} existingMemoryId={editingMemory?.id} onCancel={()=>setRoute('admin_dashboard')} onSave={()=>setRoute('admin_dashboard')} />} 
+          
           {(route === 'portfolio' || route === 'admin_login') && ( 
               <> 
-                  <PortfolioLanding isDarkMode={isDarkMode} toggleTheme={()=>setIsDarkMode(!isDarkMode)} onLoginClick={()=>setRoute('admin_login')} /> 
+                  {route === 'portfolio' && <PortfolioLanding isDarkMode={isDarkMode} toggleTheme={()=>setIsDarkMode(!isDarkMode)} />} 
                   {route === 'admin_login' && <AdminLogin isDarkMode={isDarkMode} onCancel={()=>setRoute('portfolio')} onLogin={()=>setRoute('admin_dashboard')} />} 
               </> 
           )} 

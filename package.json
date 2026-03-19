@@ -3,10 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://meda117.github.io/secretpage/",
+  "homepage": "https://secretpage.online/",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && copy games.html dist\\",
+    "build": "vite build && copy games.html dist\\ && echo secretpage.online > dist\\CNAME",
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "npm run build",
